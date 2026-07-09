@@ -1,0 +1,394 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════
+   NoLook — Liquid Glass design system
+   Every color in the app routes through these tokens. Components must
+   use token utilities (bg-background, text-foreground, bg-glass, …)
+   and the .glass* surface classes — never raw palette values.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Midnight (default) ─────────────────────────────────────────── */
+  --background: #07090f;
+  --foreground: #eef1f7;
+  --muted-foreground: #8b93a7;
+  --faint-foreground: #4c5468;
+
+  /* ambient glow blobs the glass refracts */
+  --glow-1: #1d3a8a;
+  --glow-2: #4c1d95;
+  --glow-3: #0e4f5c;
+  --glow-opacity: 0.55;
+
+  /* glass surfaces */
+  --glass: rgba(255, 255, 255, 0.055);
+  --glass-strong: rgba(255, 255, 255, 0.09);
+  --glass-subtle: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-shadow: rgba(2, 4, 10, 0.55);
+
+  --primary: #6ea8ff;
+  --primary-strong: #0a84ff;
+  --primary-foreground: #051225;
+  --success: #30d158;
+  --warning: #ffd60a;
+  --danger: #ff453a;
+
+  /* typing character states */
+  --char-pending: #545d73;
+  --char-correct: #eef1f7;
+  --char-incorrect: #ff453a;
+  --char-extra: #a13c38;
+  --caret: #6ea8ff;
+
+  --radius: 1.25rem;
+  --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+
+.dawn {
+  --background: #eef0f6;
+  --foreground: #1b1f2a;
+  --muted-foreground: #5a6172;
+  --faint-foreground: #9aa1b3;
+
+  --glow-1: #b9ccff;
+  --glow-2: #e6d5ff;
+  --glow-3: #bfeaf2;
+  --glow-opacity: 0.8;
+
+  --glass: rgba(255, 255, 255, 0.42);
+  --glass-strong: rgba(255, 255, 255, 0.6);
+  --glass-subtle: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: rgba(30, 41, 78, 0.14);
+
+  --primary: #007aff;
+  --primary-strong: #0066d6;
+  --primary-foreground: #ffffff;
+  --success: #248a3d;
+  --warning: #c78a04;
+  --danger: #d70015;
+
+  --char-pending: #a3aabc;
+  --char-correct: #1b1f2a;
+  --char-incorrect: #d70015;
+  --char-extra: #a35a54;
+  --caret: #007aff;
+  color-scheme: light;
+}
+
+.aurora {
+  --background: #050d0c;
+  --foreground: #e9f6f2;
+  --muted-foreground: #7fa39a;
+  --faint-foreground: #40584f;
+
+  --glow-1: #065f46;
+  --glow-2: #155e75;
+  --glow-3: #4c1d95;
+  --glow-opacity: 0.5;
+
+  --glass: rgba(214, 255, 244, 0.05);
+  --glass-strong: rgba(214, 255, 244, 0.085);
+  --glass-subtle: rgba(214, 255, 244, 0.028);
+  --glass-border: rgba(214, 255, 244, 0.1);
+  --glass-highlight: rgba(214, 255, 244, 0.18);
+  --glass-shadow: rgba(1, 8, 6, 0.55);
+
+  --primary: #34d399;
+  --primary-strong: #10b981;
+  --primary-foreground: #03170f;
+  --success: #30d158;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+
+  --char-pending: #3f5a52;
+  --char-correct: #e9f6f2;
+  --char-incorrect: #fb7185;
+  --char-extra: #9f4a56;
+  --caret: #34d399;
+  color-scheme: dark;
+}
+
+.sunset {
+  --background: #0f0709;
+  --foreground: #f7efe9;
+  --muted-foreground: #a78e85;
+  --faint-foreground: #5e4a44;
+
+  --glow-1: #7c2d12;
+  --glow-2: #831843;
+  --glow-3: #713f12;
+  --glow-opacity: 0.5;
+
+  --glass: rgba(255, 235, 220, 0.05);
+  --glass-strong: rgba(255, 235, 220, 0.085);
+  --glass-subtle: rgba(255, 235, 220, 0.028);
+  --glass-border: rgba(255, 235, 220, 0.1);
+  --glass-highlight: rgba(255, 235, 220, 0.2);
+  --glass-shadow: rgba(10, 3, 2, 0.55);
+
+  --primary: #fb923c;
+  --primary-strong: #f97316;
+  --primary-foreground: #1f0d02;
+  --success: #4ade80;
+  --warning: #facc15;
+  --danger: #f43f5e;
+
+  --char-pending: #5c4a42;
+  --char-correct: #f7efe9;
+  --char-incorrect: #f43f5e;
+  --char-extra: #9c4a4a;
+  --caret: #fb923c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-glass: var(--glass);
+  --color-glass-strong: var(--glass-strong);
+  --color-glass-subtle: var(--glass-subtle);
+  --color-glass-border: var(--glass-border);
+  --color-glass-highlight: var(--glass-highlight);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-char-pending: var(--char-pending);
+  --color-char-correct: var(--char-correct);
+  --color-char-incorrect: var(--char-incorrect);
+  --color-char-extra: var(--char-extra);
+  --color-caret: var(--caret);
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", ui-monospace, monospace;
+  --radius-glass: var(--radius);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────── */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.6s var(--expo-out);
+}
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 15%, transparent);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Liquid glass surfaces ─────────────────────────────────────────── */
+
+.glass,
+.glass-strong,
+.glass-subtle {
+  position: relative;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.04),
+    0 8px 32px -8px var(--glass-shadow),
+    0 2px 8px -2px var(--glass-shadow);
+}
+
+.glass {
+  background: var(--glass);
+}
+.glass-strong {
+  background: var(--glass-strong);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+}
+.glass-subtle {
+  background: var(--glass-subtle);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+}
+
+/* interactive glass: hover lift + press feedback */
+.glass-interactive {
+  cursor: pointer;
+  transition:
+    background-color 0.25s var(--expo-out),
+    box-shadow 0.25s var(--expo-out),
+    transform 0.25s var(--expo-out);
+}
+.glass-interactive:hover {
+  background: var(--glass-strong);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    0 12px 40px -8px var(--glass-shadow),
+    0 0 0 1px var(--glass-border),
+    0 0 24px -6px color-mix(in oklch, var(--primary) 25%, transparent);
+}
+.glass-interactive:active {
+  transform: scale(0.97);
+}
+
+/* ── Ambient background glow (what the glass refracts) ────────────── */
+
+.bg-glow-field {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bg-glow-field::before,
+.bg-glow-field::after,
+.bg-glow-field > .glow-3 {
+  content: "";
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: var(--glow-opacity);
+  will-change: transform;
+}
+.bg-glow-field::before {
+  background: radial-gradient(circle at center, var(--glow-1), transparent 65%);
+  top: -18vmax;
+  left: -12vmax;
+  animation: glow-drift-a 26s ease-in-out infinite alternate;
+}
+.bg-glow-field::after {
+  background: radial-gradient(circle at center, var(--glow-2), transparent 65%);
+  bottom: -20vmax;
+  right: -14vmax;
+  animation: glow-drift-b 32s ease-in-out infinite alternate;
+}
+.bg-glow-field > .glow-3 {
+  background: radial-gradient(circle at center, var(--glow-3), transparent 65%);
+  top: 30%;
+  left: 45%;
+  width: 40vmax;
+  height: 40vmax;
+  animation: glow-drift-c 38s ease-in-out infinite alternate;
+}
+
+@keyframes glow-drift-a {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(9vmax, 6vmax) scale(1.15);
+  }
+}
+@keyframes glow-drift-b {
+  from {
+    transform: translate(0, 0) scale(1.1);
+  }
+  to {
+    transform: translate(-8vmax, -7vmax) scale(0.95);
+  }
+}
+@keyframes glow-drift-c {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-10vmax, 8vmax) scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-glow-field::before,
+  .bg-glow-field::after,
+  .bg-glow-field > .glow-3 {
+    animation: none;
+  }
+}
+
+/* ── Typing surface ────────────────────────────────────────────────── */
+
+.typing-words {
+  font-family: var(--font-mono);
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  line-height: 2.6rem;
+  letter-spacing: 0.02em;
+}
+
+.typing-char {
+  transition: color 0.12s ease-out;
+}
+.typing-char[data-state="pending"] {
+  color: var(--char-pending);
+}
+.typing-char[data-state="correct"] {
+  color: var(--char-correct);
+}
+.typing-char[data-state="incorrect"] {
+  color: var(--char-incorrect);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--char-incorrect) 60%, transparent);
+  text-underline-offset: 0.3em;
+}
+.typing-char[data-state="extra"] {
+  color: var(--char-extra);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--char-extra) 60%, transparent);
+  text-underline-offset: 0.3em;
+}
+/* committed word left with errors — flag the whole word */
+.typing-word[data-error="true"] {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--char-incorrect) 45%, transparent);
+  text-underline-offset: 0.35em;
+}
+
+/* gaze status dot pulse */
+@keyframes gaze-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+.gaze-dot {
+  animation: gaze-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gaze-dot {
+    animation: none;
+  }
+}
