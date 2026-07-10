@@ -126,6 +126,13 @@ Two independent layers:
   pitch/eyeLookDown baselines; `GazeController` debounces it (400ms to enter
   "down", 300ms hysteresis to exit, 600ms to declare tracking "lost") into
   peek events. Produces `IntegrityStatus`: `clean` / `assisted` / `untracked`.
+  When the camera is on, a run also earns a **verified score**
+  (`src/lib/gaze/score.ts`, pure): the raw WPM docked a penalty per keyboard
+  glance + per second looking down/lost (capped at 75%). Raw WPM is never
+  altered — the verified score is a separate, camera-only metric shown in
+  results. **Master difficulty additionally fails on any look-away** (the first
+  sustained peek ends the run) — enforced in `TestExperience`'s gaze handler,
+  not the pure engine (which only knows typos).
 - **Server-side plausibility** (`src/lib/server/validate.ts`): rejects
   physically implausible submissions (wpm > 250, accuracy/duration/timeline
   inconsistencies, near-zero-variance keystroke timing = bot fingerprint),
@@ -165,17 +172,43 @@ Two independent layers:
 `AUTH_SECRET` (Auth.js JWT signing — `openssl rand -base64 32`),
 `GITHUB_ID`/`GITHUB_SECRET` (optional OAuth — GitHub button hides if unset).
 
+## Deployment
+
+The app is deployment-ready and **builds with zero env vars** (guest mode) —
+`next build` never needs a DB. See `README.md` for the full guide. Key points:
+
+- `package.json` has `postinstall: prisma generate` so fresh CI/Vercel installs
+  generate the client (it isn't committed). Plus `db:migrate`
+  (`prisma migrate deploy`), `db:push`, `db:studio`, `db:generate`.
+- **Migrations:** `prisma/migrations/0_init/` is the baseline (generated via
+  `prisma migrate diff --from-empty`, applied with `npm run db:migrate`). Evolve
+  the schema with `prisma migrate dev --name <x>` against a dev DB.
+- **Accounts flow is complete end to end:** create-account / sign-in (email+
+  password + optional GitHub) in `AuthPanel` → `/api/register` + `signIn`;
+  sign-out + account display in `SettingsView`; guest history bulk-claim via
+  `ClaimGate` → `/api/results/claim`.
+- `auth.ts` logs a loud (non-fatal) warning if a **production** build has
+  accounts wired (DB or GitHub) but no `AUTH_SECRET` — sessions would be
+  forgeable. Guest-only deploys still boot with no secret.
+- MediaPipe WASM + face model are vendored in `public/` (present, ~15MB) — the
+  gaze USP has no third-party runtime dependency. Camera needs HTTPS/localhost.
+- **Register throttle:** `/api/register` is rate-limited (≤5 per IP per 15 min,
+  `checkRegisterRateLimit` in `validate.ts`) — same in-memory/per-instance
+  caveat as the results rate limit (fine for launch; swap to Redis for hard
+  global limits).
+- **ESLint ignores `public/`** (eslint.config.mjs) so `npm run lint` isn't
+  drowned by the vendored MediaPipe WASM glue. `src` lints clean.
+- **Intentional unused primitives:** `GlassSurface` + `GooeyFilter` are exported
+  but not currently rendered (reserved per CONTRACTS.md). Left in place — they
+  tree-shake out of the bundle, so there's no cost, and removing them would
+  diverge from the spec.
+
 ## Repo/tooling notes
 
-- This directory is **not its own git repository** — it sits inside
-  `/Users/slender/Developer/Codes`, which *is* a git repo, but `Typical/`
-  currently shows as entirely untracked (`?? ./`). No commit history to
-  mine for context yet.
-- The `code-review-graph` MCP graph could not be built against this
-  directory (`build_or_update_graph_tool` requires a `.git` or
-  `.code-review-graph` at `repo_root`, and this isn't a repo root). If this
-  project gets its own `git init`, rebuild the graph — it gives much cheaper
-  structural queries (callers/impact-radius/tests-for) than re-reading files.
+- This directory **is now its own git repository** (`main`, initial commit
+  `ff15d85`) — deployable as a standalone Vercel/Node project.
+- The `code-review-graph` MCP graph can now be built here (it's a repo root).
+  Rebuild it for cheaper structural queries than re-reading files.
 
 ## Recent fixes (2026-07-10)
 
@@ -246,6 +279,105 @@ Two independent layers:
   30s) disagreed with the client's persisted value → React hydration error on
   the `GlassPill` radios. Now it initializes from `DEFAULT_CONFIG` (matches the
   server) and applies the persisted default in the mount effect.
+
+## Recent fixes — round 4 (2026-07-10)
+
+- **Word tilt reversed to match the reference component.** The plane now tilts
+  the *other* way — `rotateX(22deg)` (was `-22deg`), hinged on the caret row
+  (`transformOrigin: center 42%`, derived from a new `CARET_ROW = 2` constant)
+  instead of `center top`. So the rows of already-typed text *above* the caret
+  lean back and recede into depth, while the upcoming rows below stay forward —
+  the "receding hallway toward the top" look of the pasted Skiper28 reference.
+  The active caret line sits *on* the hinge, so it stays crisp. The caret is
+  now scrolled to visible row 2 (was row 1) so there are 2 receding rows above
+  and 3 forward rows below.
+- **Mask flipped to top-only** to fade the newly-receding upper rows:
+  `linear-gradient(to bottom, transparent 0%, #000 33%, #000 100%)` (was
+  bottom-only). Bottom/upcoming rows stay fully crisp.
+- **Typing text is justified.** `.typing-words` inner layer now uses
+  `text-align: justify` + `text-align-last: center`. Each full line stretches to
+  both edges (no more ragged right); the last/partial line (and single-line
+  content like short quotes, custom passages, the zen prompt) is centred, so the
+  block sits centred under the nav in **every** mode instead of hugging the left
+  in quote/zen/custom. To give justify whitespace to stretch, words are now
+  separated by a real space text node (`<Fragment>…{" "}`) rather than the old
+  `mr-[0.6em]` margin. Caret math is unchanged and still correct — the word span
+  stays `relative`, so char `offsetLeft` is measured relative to the word, and
+  `wordEl.offsetLeft` reflects the justified/centred position live.
+- **KeyHeatmap: no more corner-cutting on hover, plus centred & bigger.** The
+  keys sat in an `overflow-x-auto` container, and `overflow-x: auto` forces
+  `overflow-y` to compute to `auto` too — so the hover "pop" (lift + scale +
+  ring) on the top row and the left/right edge keys (Q, P) was clipped. Fixed
+  with generous padding inside the scroll container (`px-4 pt-8 pb-6`) so the pop
+  has room. The rows are now wrapped in an `mx-auto w-max` block that centres the
+  keyboard when it fits and falls back to left-aligned horizontal scroll when it
+  doesn't. Keys enlarged `size-11/12 → size-12/14`, letters `text-base →
+  text-lg`, and `KEY_REM` (stagger scale) `3 → 3.5` to match.
+
+## Recent fixes — round 5 (2026-07-10)
+
+- **Word display blur moved to the bottom.** Round 4 flipped the tilt and (as a
+  side-effect) the fade mask to the top; the intended look is the *bottom*
+  (furthest-ahead) rows fading. Mask is back to bottom-only
+  (`linear-gradient(to bottom, #000 0%, #000 60%, transparent)`), tilt unchanged.
+- **Gaze scoring — looking away now costs points.** New pure module
+  `src/lib/gaze/score.ts` computes an integrity penalty (per peek + per second
+  looking down/lost, capped 75%) and a **verified score** (`verifiedWpm`). The
+  results screen shows it as a distinct block whenever the camera was on —
+  raw WPM stays factual, the verified score is the honesty-adjusted number.
+  (Note: PB/leaderboard still rank by raw WPM; wiring the verified score into
+  ranking would be a server/schema change and was left out for now.)
+- **Master fails on looking away.** In `TestExperience`, a `peek-start` while
+  `difficulty === "master"` now calls `engine.finish("failed")` (a
+  `failCauseRef` distinguishes it so the notice reads "master allows no looking
+  away from the screen" vs the typo message). Only active with the camera on +
+  calibrated; peeks require a sustained 400ms look-down, so quick glances don't
+  false-fail. The pure engine is unchanged — it still only fails on typos.
+- **Theme dropdown now takes on the active theme's hue.** Its background was
+  `color-mix(background 94%, foreground 6%)` — faithful per theme but near-black
+  in every dark theme, so the hue was imperceptible and read faintly warm/red by
+  contrast against the cool ambient glow. Now
+  `color-mix(in srgb, var(--background) 84%, var(--primary) 16%)` — visibly blue
+  in midnight, green in aurora, warm in sunset, light-blue in dawn.
+
+## Recent fixes — round 6 (2026-07-10)
+
+- **`.glass*` classes silently break positioning utilities — root-caused.**
+  `globals.css` sets `position: relative` on `.glass` / `.glass-strong` /
+  `.glass-subtle` as *unlayered* CSS, so it **overrides Tailwind's `absolute`
+  utility** (utilities live in a layer; unlayered CSS wins). Any element with
+  both a `.glass*` class and `absolute` is actually `position: relative`. This
+  caused two reported bugs:
+  - **Chart tooltip overlapping the action buttons.** The `WpmChart` (and
+    identical `TrendChart`) hover tooltip has `glass-strong … absolute`; being
+    relative, it rendered in-flow *below* the plot and collided with the
+    results buttons. Fixed by forcing `position: "absolute"` inline (inline
+    beats the unlayered class without touching the globals.css contract).
+  - **IntegrityBadge (i) tooltip flicker + bleed-through.** Same cause: relative
+    → the tooltip became an in-flow flex item in the badge row, so showing it
+    grew the row, shifted the trigger out from under the cursor, and the
+    mouseleave→hide→re-enter loop flickered. Fixed with inline
+    `position: "absolute"` + `pointer-events-none`; centering moved from the
+    (framer-overridden) `-translate-x-1/2` class into framer's `x: "-50%"`.
+    Then, because the tooltip sits over the stat grid, its frosted
+    `.glass-strong` let the tiles bleed through into a double-exposure — so it
+    was switched to an **opaque** elevated surface (`color-mix(in srgb,
+    --background 90%, --foreground 10%)` + border + shadow, `z-30`), same
+    legibility exception already made for the theme dropdown.
+  - **`ConfigBar` custom-value popover** (the "set custom" duration/word-count
+    dropdown) had the same bug — relative → it rendered in-flow, taking layout
+    space and wrecking the config-bar row (mode label floated up, difficulty row
+    shoved down). Fixed the same way: absolute + opaque surface + framer `x`
+    centering.
+  - **`WordStream` "click to focus" button** likewise pinned absolute inline
+    (keeps `.glass` — it's meant to float over the dimmed text) with framer
+    `x/y: "-50%"` centering.
+  - **Rule of thumb: never put a `.glass*` class on an element you also position
+    with `absolute`/`fixed`/`sticky` — put the glass on an inner child, or force
+    `position` inline. And when framer animates any transform prop (`y`/`scale`)
+    it owns `transform`, so Tailwind `-translate-*` centering is ignored — use
+    framer's `x`/`y` instead.** All five known instances are now fixed
+    (WpmChart, TrendChart, IntegrityBadge, ConfigBar, WordStream).
 
 ## Keeping this file current
 

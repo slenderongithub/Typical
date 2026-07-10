@@ -6,7 +6,7 @@ import {
   useMotionValue,
   useSpring,
 } from "framer-motion";
-import { memo, useEffect, useLayoutEffect, useRef } from "react";
+import { Fragment, memo, useEffect, useLayoutEffect, useRef } from "react";
 
 import type { TypingEngine } from "@/lib/engine/engine";
 import { useSettings } from "@/lib/store/settings";
@@ -19,6 +19,14 @@ import { useEngineSnapshot } from "./useEngineSnapshot";
 /** Must match `.typing-words` line-height (2.6rem) in globals.css. */
 const LINE_HEIGHT_REM = 2.6;
 const VISIBLE_LINES = 6;
+/**
+ * Which visible row (0-indexed) the caret line is scrolled to. Rows above it
+ * are already-typed context that recedes into depth; rows below are upcoming.
+ * The perspective is hinged on this row so the active line stays crisp.
+ */
+const CARET_ROW = 2;
+/** Vertical hinge for the tilt, as a % of the window — the caret row's centre. */
+const TILT_ORIGIN_Y = `${((CARET_ROW + 0.5) / VISIBLE_LINES) * 100}%`;
 
 const CARET_X_SPRING = { stiffness: 500, damping: 34, mass: 0.5 };
 const SCROLL_SPRING = { stiffness: 180, damping: 26 };
@@ -48,7 +56,7 @@ const Word = memo(
     return (
       <span
         ref={register}
-        className="typing-word relative mr-[0.6em] inline-block"
+        className="typing-word relative inline-block"
         data-error={word.committed && !word.correct ? "true" : undefined}
       >
         {chars}
@@ -65,9 +73,10 @@ export interface WordStreamProps {
 }
 
 /**
- * The word display: a 3-line window over the test text. The caret line is
- * kept on the middle row by spring-animating the inner container's
- * translateY — the stream glides, it never jumps.
+ * The word display: a multi-line window over the test text. The caret line is
+ * kept on `CARET_ROW` by spring-animating the inner container's translateY —
+ * the stream glides, it never jumps. The window is tilted in 3D so the rows of
+ * already-typed text above the caret lean back and recede into depth.
  */
 export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps) {
   const snapshot = useEngineSnapshot(engine);
@@ -122,9 +131,10 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
     const fontSize = parseFloat(getComputedStyle(wordEl).fontSize) || 24;
     const centeredY = yBase + (lineHeightPx.current - fontSize * 1.35) / 2;
 
-    // keep the caret's line on the middle visible row
+    // keep the caret's line on CARET_ROW
     const lineIndex = Math.round(yBase / lineHeightPx.current);
-    const targetScroll = -Math.max(0, lineIndex - 1) * lineHeightPx.current;
+    const targetScroll =
+      -Math.max(0, lineIndex - CARET_ROW) * lineHeightPx.current;
 
     if (smoothCaret) {
       caretXRaw.set(x);
@@ -151,7 +161,9 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
       const wordEl = wordEls.current.get(snap.currentWordIndex);
       if (wordEl) {
         const lineIndex = Math.round(wordEl.offsetTop / lineHeightPx.current);
-        scrollRaw.set(-Math.max(0, lineIndex - 1) * lineHeightPx.current);
+        scrollRaw.set(
+          -Math.max(0, lineIndex - CARET_ROW) * lineHeightPx.current,
+        );
       }
     };
     const ro = new ResizeObserver(bump);
@@ -181,18 +193,20 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
       {/* The tilted window is FIXED (it does not scroll), so a line's depth is a
           function of its screen row — not how far the user has typed. The words
           scroll inside it; the caret shares that scrolling layer and stays
-          pixel-aligned (offsets are measured in flat layout space). Hinged at
-          the top so successive rows lean back and recede; the bottom-only mask
-          fades those far rows out. */}
+          pixel-aligned (offsets are measured in flat layout space). Hinged on
+          the caret row and tilted the other way (positive rotateX) so the rows
+          of already-typed text ABOVE lean back and recede into depth while the
+          upcoming rows below stay forward; a bottom-only mask blurs/fades the
+          lowest, furthest-ahead rows out. */}
       <div
         className="absolute inset-0 overflow-hidden"
         style={{
-          transform: "rotateX(-22deg)",
-          transformOrigin: "center top",
+          transform: "rotateX(22deg)",
+          transformOrigin: `center ${TILT_ORIGIN_Y}`,
           WebkitMaskImage:
-            "linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%)",
+            "linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)",
           maskImage:
-            "linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%)",
+            "linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)",
         }}
       >
         <motion.div
@@ -201,7 +215,10 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
             "typing-words relative transition-[filter,opacity] duration-300",
             !focused && !finished && "opacity-40 blur-[6px]",
           )}
-          style={{ y: scrollY }}
+          // Justify every full line to both edges (Word-style block); the last,
+          // partial line is centred so short texts (quotes, custom, the zen
+          // prompt) sit centred under the nav instead of hugging the left.
+          style={{ y: scrollY, textAlign: "justify", textAlignLast: "center" }}
         >
           {empty ? (
             <span className="typing-char" data-state="pending">
@@ -211,14 +228,17 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
             </span>
           ) : (
             words.map((w, i) => (
-              <Word
-                key={i}
-                word={w}
-                register={(el) => {
-                  if (el) wordEls.current.set(i, el);
-                  else wordEls.current.delete(i);
-                }}
-              />
+              // A real space between words (not a margin) gives `text-align:
+              // justify` the whitespace it needs to stretch each line to width.
+              <Fragment key={i}>
+                <Word
+                  word={w}
+                  register={(el) => {
+                    if (el) wordEls.current.set(i, el);
+                    else wordEls.current.delete(i);
+                  }}
+                />{" "}
+              </Fragment>
             ))
           )}
           {!finished && (
@@ -231,10 +251,15 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
         {!focused && !finished && (
           <motion.button
             type="button"
-            className="glass absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full px-5 py-2.5 text-sm text-muted-foreground"
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            // `.glass` forces position:relative (unlayered CSS beats the
+            // `absolute` utility), so pin it absolute inline; and because
+            // animating `scale` makes framer own the transform, centre it via
+            // framer's x/y (the `-translate-*` classes would be ignored).
+            className="glass absolute left-1/2 top-1/2 rounded-full px-5 py-2.5 text-sm text-muted-foreground"
+            style={{ position: "absolute" }}
+            initial={{ opacity: 0, scale: 0.92, x: "-50%", y: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+            exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
             onClick={onRequestFocus}
           >

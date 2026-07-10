@@ -102,6 +102,8 @@ export function TestExperience() {
   const seedRef = useRef(seed);
   const chunkRef = useRef(1);
   const focusLostRef = useRef(false);
+  /** why the current run failed — drives the notice copy (typo vs looked away) */
+  const failCauseRef = useRef<"typo" | "lookaway">("typo");
   const gazeSessionRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const tabArmedRef = useRef(0);
@@ -153,9 +155,11 @@ export function TestExperience() {
       if (r.reason === "failed") {
         endGazeSession();
         setFailedNotice(
-          cfg.difficulty === "master"
-            ? "test failed — master allows no mistakes"
-            : "test failed — expert allows no errored words",
+          failCauseRef.current === "lookaway"
+            ? "test failed — master allows no looking away from the screen"
+            : cfg.difficulty === "master"
+              ? "test failed — master allows no mistakes"
+              : "test failed — expert allows no errored words",
         );
         setFailedRestartTick((t) => t + 1);
         return;
@@ -218,6 +222,7 @@ export function TestExperience() {
       engineRef.current?.dispose();
       chunkRef.current = 1;
       focusLostRef.current = false;
+      failCauseRef.current = "typo";
       if (gazeSessionRef.current) {
         gazeSessionRef.current = false;
         try {
@@ -441,13 +446,15 @@ export function TestExperience() {
       }
       const eng = engineRef.current;
       if (ev.type === "peek-start") {
-        if (
-          useSettings.getState().pauseOnPeek &&
-          eng &&
-          eng.getSnapshot().status === "running"
-        ) {
-          eng.pause("peek");
-          setOverlay("peek");
+        if (eng && eng.getSnapshot().status === "running") {
+          if (configRef.current.difficulty === "master") {
+            // master is unforgiving: one glance away from the screen ends it
+            failCauseRef.current = "lookaway";
+            eng.finish("failed");
+          } else if (useSettings.getState().pauseOnPeek) {
+            eng.pause("peek");
+            setOverlay("peek");
+          }
         }
       }
       if (ev.type === "peek-end" && overlayRef.current === "peek") {

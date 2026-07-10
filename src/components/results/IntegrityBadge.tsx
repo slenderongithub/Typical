@@ -69,10 +69,25 @@ export function IntegrityBadge({ report }: IntegrityBadgeProps) {
         {tip && (
           <motion.span
             role="tooltip"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="glass-strong absolute left-1/2 top-full z-20 mt-2 w-64 -translate-x-1/2 rounded-xl p-3 text-left text-xs leading-relaxed text-muted-foreground"
+            initial={{ opacity: 0, y: 4, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 4, x: "-50%" }}
+            // Opaque elevated surface (NOT the translucent `.glass-strong`): it
+            // sits over the stat grid below, and a frosted surface let those
+            // tiles bleed through into a messy double-exposure. Opaque + a high
+            // z-index means it cleanly covers whatever it overlaps. Dropping
+            // `.glass-strong` also avoids its `position: relative` (which,
+            // unlayered, beats the `absolute` utility). Centering lives in
+            // framer's `x` — animating `y` makes framer own the transform, so
+            // a `-translate-x-1/2` class would be silently ignored.
+            style={{
+              position: "absolute",
+              background:
+                "color-mix(in srgb, var(--background) 90%, var(--foreground) 10%)",
+              boxShadow:
+                "0 14px 36px -12px var(--glass-shadow), 0 2px 8px -3px var(--glass-shadow)",
+            }}
+            className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-64 rounded-xl border border-glass-border p-3 text-left text-xs leading-relaxed text-muted-foreground"
           >
             Verified with on-device head-pose and eye-state heuristics — an
             honest estimate of sustained keyboard glances, not pixel-perfect

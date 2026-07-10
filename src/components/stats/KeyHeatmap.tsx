@@ -10,8 +10,8 @@ const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 const DIGITS = "1234567890";
 /** Real-keyboard stagger offsets per row (in key-width fractions). */
 const ROW_OFFSETS = [0, 0.35, 0.85];
-/** Key width in rem — the stagger offsets are scaled against this. */
-const KEY_REM = 3;
+/** Key width in rem (matches `sm:size-14`) — stagger offsets scale against it. */
+const KEY_REM = 3.5;
 
 export interface KeyHeatmapProps {
   keyStats: Record<string, KeyStat>;
@@ -69,7 +69,7 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
             : `${k}: no data`
         }
         className={cn(
-          "relative flex size-11 items-center justify-center rounded-xl border font-mono sm:size-12",
+          "relative flex size-12 items-center justify-center rounded-xl border font-mono sm:size-14",
           hasData
             ? "border-glass-border glass text-foreground"
             : "border-glass-border/60 glass-subtle text-faint-foreground",
@@ -98,7 +98,7 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
           }}
           transition={{ type: "spring", stiffness: 500, damping: 26 }}
           className={cn(
-            "text-base leading-none",
+            "text-lg leading-none",
             isActive && "text-foreground",
           )}
         >
@@ -164,16 +164,22 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
         </div>
       </div>
 
-      <div className="flex flex-col items-start gap-2 overflow-x-auto pb-2 pt-1">
-        {rows.map((row, i) => (
-          <div
-            key={row}
-            className="flex gap-2"
-            style={{ marginLeft: `${offsets[i] * KEY_REM}rem` }}
-          >
-            {row.split("").map(renderKey)}
-          </div>
-        ))}
+      {/* The scroll container clips both axes, so it needs generous padding —
+          otherwise the hover "pop" (lift + scale + ring) on the top row and the
+          left/right edge keys gets cut off. `mx-auto` centres the keyboard when
+          it fits and collapses to a left-aligned scroll when it doesn't. */}
+      <div className="overflow-x-auto px-4 pb-6 pt-8">
+        <div className="mx-auto flex w-max flex-col items-start gap-2.5">
+          {rows.map((row, i) => (
+            <div
+              key={row}
+              className="flex gap-2"
+              style={{ marginLeft: `${offsets[i] * KEY_REM}rem` }}
+            >
+              {row.split("").map(renderKey)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

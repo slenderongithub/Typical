@@ -408,7 +408,10 @@ export function WpmChart({ timeline, height = 220 }: WpmChartProps) {
         {hovered && (
           <div
             className="glass-strong pointer-events-none absolute z-10 rounded-xl px-3 py-2"
-            style={{ left: tipLeft, top: PAD.top + 4, width: TOOLTIP_W }}
+            // `.glass-strong` sets `position: relative` (unlayered CSS, so it
+            // beats Tailwind's `absolute` utility) — force absolute inline, or
+            // the tooltip drops out of the plot and collides with the buttons.
+            style={{ position: "absolute", left: tipLeft, top: PAD.top + 4, width: TOOLTIP_W }}
           >
             <div className="text-[10px] font-medium text-faint-foreground">
               {fmtT(hovered.sample.second)}s

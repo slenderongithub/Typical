@@ -57,6 +57,21 @@ if (dbAvailable()) {
   );
 }
 
+// Loud warning (not a crash — zero-config guest deploys must still boot) when a
+// production build has accounts wired up but no signing secret: JWTs would be
+// signed with the public constant below and sessions would be forgeable.
+if (
+  !process.env.AUTH_SECRET &&
+  process.env.NODE_ENV === "production" &&
+  (dbAvailable() || (!!process.env.GITHUB_ID && !!process.env.GITHUB_SECRET))
+) {
+  console.warn(
+    "[auth] AUTH_SECRET is not set in production while accounts are enabled — " +
+      "JWTs are signed with a public constant and sessions are forgeable. " +
+      "Generate one with `openssl rand -base64 32` and set AUTH_SECRET.",
+  );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // dev-only fallback: real deployments must set AUTH_SECRET — without it
   // JWTs are signed with a public constant and sessions are forgeable.

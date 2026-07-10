@@ -67,11 +67,15 @@ export function ThemeToggle() {
             transition={{ type: "spring", stiffness: 500, damping: 40 }}
             className="absolute right-0 top-full z-50 mt-2 flex min-w-40 flex-col gap-0.5 rounded-xl border border-glass-border p-1.5"
             // Clean solid dropdown — NOT the frosted `.glass-strong` surface,
-            // which read as a big translucent liquid-glass blob. Opaque
-            // background + hairline border + a soft contained shadow.
+            // which read as a big translucent liquid-glass blob. Opaque surface
+            // tinted with the theme's own accent (`--primary`) so the menu
+            // visibly takes on the active theme's hue — blue in midnight, green
+            // in aurora, warm in sunset. A plain background↔foreground mix was
+            // near-black in every dark theme, so the hue never read (and looked
+            // faintly warm/red by contrast against the cool ambient glow).
             style={{
               background:
-                "color-mix(in oklch, var(--background) 94%, var(--foreground) 6%)",
+                "color-mix(in srgb, var(--background) 84%, var(--primary) 16%)",
               boxShadow:
                 "0 12px 32px -12px var(--glass-shadow), 0 2px 6px -3px var(--glass-shadow)",
             }}

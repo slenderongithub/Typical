@@ -88,11 +88,24 @@ function CustomValue({
       <AnimatePresence>
         {open && (
           <motion.form
-            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.95 }}
+            initial={{ opacity: 0, y: 6, scale: 0.95, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+            exit={{ opacity: 0, y: 6, scale: 0.95, x: "-50%" }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
-            className="glass-strong absolute left-1/2 top-full z-30 mt-2 flex -translate-x-1/2 items-center gap-2 rounded-2xl p-2"
+            // Opaque, absolutely-positioned popover. `.glass-strong` would force
+            // position:relative (unlayered CSS beats the `absolute` utility),
+            // dropping the form in-flow and wrecking the config-bar row; drop it
+            // for a solid surface. Centering lives in framer's `x` because
+            // animating y/scale makes framer own the whole transform (so a
+            // `-translate-x-1/2` class is silently ignored).
+            style={{
+              position: "absolute",
+              background:
+                "color-mix(in srgb, var(--background) 90%, var(--foreground) 10%)",
+              boxShadow:
+                "0 14px 36px -12px var(--glass-shadow), 0 2px 8px -3px var(--glass-shadow)",
+            }}
+            className="absolute left-1/2 top-full z-30 mt-2 flex items-center gap-2 rounded-2xl border border-glass-border p-2"
             onSubmit={(e) => {
               e.preventDefault();
               const v = Math.floor(Number(draft));

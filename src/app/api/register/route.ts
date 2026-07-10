@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { dbAvailable, getDb } from "@/lib/server/db";
+import { checkRegisterRateLimit } from "@/lib/server/validate";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,14 @@ const bodySchema = z.object({
 export async function POST(req: Request) {
   if (!dbAvailable()) {
     return NextResponse.json({ offline: true }, { status: 503 });
+  }
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!checkRegisterRateLimit(`register:${ip}`)) {
+    return NextResponse.json(
+      { error: "too many attempts — please wait a few minutes" },
+      { status: 429 },
+    );
   }
   try {
     const parsed = bodySchema.safeParse(await req.json());

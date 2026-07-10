@@ -113,6 +113,30 @@ export function checkRateLimit(key: string): boolean {
   return true;
 }
 
+const REGISTER_WINDOW_MS = 15 * 60_000;
+const REGISTER_MAX = 5;
+const registerHits = new Map<string, number[]>();
+
+/**
+ * In-memory register throttle — at most REGISTER_MAX account creations per key
+ * (IP) per window. Per-instance on serverless (same caveat as checkRateLimit),
+ * but enough to blunt casual mass-signup abuse.
+ */
+export function checkRegisterRateLimit(key: string): boolean {
+  const nowTs = Date.now();
+  if (registerHits.size > RATE_MAP_CAP) {
+    const oldest = registerHits.keys().next().value;
+    if (oldest !== undefined) registerHits.delete(oldest);
+  }
+  const recent = (registerHits.get(key) ?? []).filter(
+    (t) => nowTs - t < REGISTER_WINDOW_MS,
+  );
+  if (recent.length >= REGISTER_MAX) return false;
+  recent.push(nowTs);
+  registerHits.set(key, recent);
+  return true;
+}
+
 /** Replayed keystroke fingerprints across "different" runs ⇒ bot. */
 export function checkFingerprintReuse(signature: string): boolean {
   const nowTs = Date.now();

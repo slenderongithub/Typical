@@ -5,6 +5,10 @@ import { Check, ImageDown, Repeat2, RotateCw, Target } from "lucide-react";
 import { useState } from "react";
 
 import { GlassButton, GlassPanel, SmoothNumber } from "@/components/glass";
+import {
+  integrityPenaltyPct,
+  verifiedWpm,
+} from "@/lib/gaze/score";
 import type { PersonalBest, SavedResult } from "@/lib/types";
 
 import { IntegrityBadge } from "./IntegrityBadge";
@@ -57,6 +61,10 @@ export function ResultsScreen({
 
   const delta = pb.previous ? result.wpm - pb.previous.wpm : null;
   const showTrackedStats = result.integrity !== "untracked";
+  // camera-verified runs get a penalized "verified score" (raw WPM stays a
+  // factual measurement; this is the number looking away actually costs).
+  const penaltyPct = integrityPenaltyPct(result);
+  const vWpm = verifiedWpm(result.wpm, result);
 
   return (
     <motion.div
@@ -96,6 +104,47 @@ export function ResultsScreen({
           ) : null}
         </div>
       </motion.div>
+
+      {/* verified score — only when the camera was watching */}
+      {showTrackedStats && (
+        <motion.div variants={item}>
+          <div className="glass-subtle flex items-center gap-4 rounded-2xl px-5 py-3.5">
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">
+                verified score
+              </span>
+              <div className="flex items-baseline gap-1.5">
+                <SmoothNumber
+                  value={Math.round(vWpm)}
+                  className="text-3xl font-semibold leading-tight text-foreground"
+                />
+                <span className="text-sm text-muted-foreground">wpm</span>
+              </div>
+            </div>
+            <div className="h-9 w-px bg-glass-border" />
+            <div className="text-sm">
+              {penaltyPct > 0 ? (
+                <span className="font-medium text-warning">
+                  −{penaltyPct}% for looking away
+                </span>
+              ) : (
+                <span className="font-medium text-success">
+                  no penalty — eyes stayed on screen
+                </span>
+              )}
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {result.peekCount === 0
+                  ? "no keyboard glances"
+                  : `${result.peekCount} glance${
+                      result.peekCount === 1 ? "" : "s"
+                    } down · ${(result.peekTotalMs / 1000).toFixed(
+                      1,
+                    )}s off screen`}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* integrity */}
       <motion.div variants={item}>

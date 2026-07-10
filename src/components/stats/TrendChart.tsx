@@ -259,7 +259,10 @@ export function TrendChart({
         {hovered && (
           <div
             className="glass-strong pointer-events-none absolute z-10 rounded-xl px-3 py-2"
-            style={{ left: tipLeft, top: PAD.top + 2, width: 122 }}
+            // `.glass-strong` forces `position: relative` (unlayered, beats the
+            // `absolute` utility) — pin it absolute inline so the tooltip stays
+            // in the plot instead of dropping into the content below.
+            style={{ position: "absolute", left: tipLeft, top: PAD.top + 2, width: 122 }}
           >
             <div className="text-[10px] font-medium text-faint-foreground">
               {hovered.p.label}
