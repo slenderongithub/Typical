@@ -71,8 +71,8 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
         className={cn(
           "relative flex size-12 items-center justify-center rounded-xl border font-mono sm:size-14",
           hasData
-            ? "border-glass-border glass text-foreground"
-            : "border-glass-border/60 glass-subtle text-faint-foreground",
+            ? "glass text-foreground"
+            : "glass-subtle text-faint-foreground",
         )}
         style={{
           backgroundColor:
@@ -112,10 +112,10 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
             per-key accuracy
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             redder keys are the ones your fingers miss most
           </p>
         </div>
@@ -168,7 +168,7 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
           otherwise the hover "pop" (lift + scale + ring) on the top row and the
           left/right edge keys gets cut off. `mx-auto` centres the keyboard when
           it fits and collapses to a left-aligned scroll when it doesn't. */}
-      <div className="overflow-x-auto px-4 pb-6 pt-8">
+      <div className="overflow-x-auto px-4 pb-4 pt-6">
         <div className="mx-auto flex w-max flex-col items-start gap-2.5">
           {rows.map((row, i) => (
             <div

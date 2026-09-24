@@ -28,7 +28,11 @@ export function FocusOverlay({ kind, onResume }: FocusOverlayProps) {
           <motion.button
             type="button"
             onClick={kind === "blur" ? onResume : undefined}
-            className="glass-strong flex cursor-pointer items-center gap-3 rounded-full px-6 py-3.5 text-sm text-foreground"
+            className={
+              kind === "blur"
+                ? "popover flex cursor-pointer items-center gap-2.5 rounded-full px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/40"
+                : "popover flex cursor-default items-center gap-2.5 rounded-full border-danger/30 px-5 py-3 text-sm font-medium text-foreground"
+            }
             initial={{ scale: 0.92, y: 8 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 4 }}
@@ -41,8 +45,8 @@ export function FocusOverlay({ kind, onResume }: FocusOverlayProps) {
               </>
             ) : (
               <>
-                <EyeOff className="size-4 text-danger" />
                 <GlassDot tone="danger" pulse />
+                <EyeOff className="size-4 text-danger" />
                 eyes back on the screen to resume
               </>
             )}

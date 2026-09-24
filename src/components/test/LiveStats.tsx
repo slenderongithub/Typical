@@ -27,14 +27,14 @@ export function LiveStats({ engine }: LiveStatsProps) {
     <AnimatePresence>
       {show && (
         <motion.div
-          className="flex items-baseline gap-6 font-mono text-lg text-primary"
+          className="flex items-baseline gap-7 font-mono text-xl text-primary"
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 4 }}
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
           aria-live="off"
         >
-          <span className="min-w-[3ch] tabular-nums" aria-label="time">
+          <span className="min-w-[3ch] font-semibold tabular-nums" aria-label="time">
             {seconds >= 60 ? (
               <>
                 {minutes}:{String(seconds % 60).padStart(2, "0")}
@@ -45,19 +45,20 @@ export function LiveStats({ engine }: LiveStatsProps) {
           </span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground">
             <SmoothNumber
-              className="text-lg text-foreground"
+              className="text-xl text-foreground"
               value={Math.round(snapshot.liveWpm)}
               tabular
             />
-            <span className="text-xs">wpm</span>
+            <span className="font-sans text-xs">wpm</span>
           </span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground">
             <SmoothNumber
-              className="text-lg text-foreground"
+              className="text-xl text-foreground"
               value={Math.round(snapshot.liveAccuracy)}
+              suffix="%"
               tabular
             />
-            <span className="text-xs">acc</span>
+            <span className="font-sans text-xs">acc</span>
           </span>
         </motion.div>
       )}

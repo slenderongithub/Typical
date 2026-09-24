@@ -106,10 +106,11 @@ export function HistoryTable({ results }: HistoryTableProps) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <h3 className="mr-auto text-sm font-medium text-foreground">history</h3>
+        <h3 className="mr-auto text-[15px] font-semibold tracking-tight text-foreground">history</h3>
         <GlassPill
           size="sm"
           ariaLabel="filter by mode"
+          className="max-w-full overflow-x-auto"
           options={MODE_FILTERS}
           value={mode}
           onChange={(v) => {
@@ -120,6 +121,7 @@ export function HistoryTable({ results }: HistoryTableProps) {
         <GlassPill
           size="sm"
           ariaLabel="filter by integrity"
+          className="max-w-full overflow-x-auto"
           options={INTEGRITY_FILTERS}
           value={integrity}
           onChange={(v) => {
@@ -137,7 +139,7 @@ export function HistoryTable({ results }: HistoryTableProps) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground">
+              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                 <th className="pb-2 pl-3 font-medium">when</th>
                 <th className="pb-2 font-medium">mode</th>
                 <th className="pb-2 text-right font-medium">wpm</th>

@@ -15,8 +15,8 @@ export function StreakCard({ streak }: StreakCardProps) {
   const lit = streak.current >= 3;
   return (
     <div className="flex h-full flex-col">
-      <h3 className="mb-1 text-sm font-medium text-foreground">streak</h3>
-      <p className="mb-4 text-xs text-muted-foreground">days practiced in a row</p>
+      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">streak</h3>
+      <p className="mb-4 text-[13px] text-muted-foreground">days practiced in a row</p>
       <div className="flex flex-1 items-center justify-center gap-3 py-2">
         <Flame
           className={cn(

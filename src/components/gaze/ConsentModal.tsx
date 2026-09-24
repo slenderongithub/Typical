@@ -43,27 +43,28 @@ export function ConsentModal({ open, onAccept, onDecline }: ConsentModalProps) {
           role="dialog"
           aria-modal="true"
           aria-label="camera consent"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onDecline();
+          }}
         >
           <motion.div
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/70 backdrop-blur-md"
             onClick={onDecline}
           />
           <motion.div
-            className="glass-strong relative w-full max-w-md rounded-3xl p-7"
+            className="popover relative w-full max-w-md rounded-[1.75rem] p-7"
             initial={{ opacity: 0, y: 24, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
           >
-            <div className="mb-1 flex items-center gap-2.5">
-              <span className="glass flex size-9 items-center justify-center rounded-full text-primary">
-                <ScanFace className="size-4.5" />
-              </span>
-              <h2 className="text-lg font-semibold text-foreground">
-                verify your runs with the camera
-              </h2>
-            </div>
-            <p className="mb-5 text-sm text-muted-foreground">
+            <span className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <ScanFace className="size-5" />
+            </span>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              verify your runs with the camera
+            </h2>
+            <p className="mb-6 mt-1.5 text-sm text-muted-foreground">
               Prove you never peeked at the keyboard — the badge real
               touch-typists deserve.
             </p>
@@ -83,7 +84,7 @@ export function ConsentModal({ open, onAccept, onDecline }: ConsentModalProps) {
               ))}
             </ul>
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 border-t border-glass-border pt-5">
               <GlassButton variant="ghost" onClick={onDecline}>
                 not now
               </GlassButton>

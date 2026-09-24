@@ -81,15 +81,17 @@ export async function renderShareCard(result: SavedResult): Promise<Blob> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas 2d context unavailable");
 
-  const bg = token("--background", "#07090f");
-  const fg = token("--foreground", "#eef1f7");
-  const muted = token("--muted-foreground", "#8b93a7");
-  const primary = token("--primary", "#6ea8ff");
-  const success = token("--success", "#30d158");
-  const warning = token("--warning", "#ffd60a");
+  const bg = token("--background", "#07080d");
+  const fg = token("--foreground", "#eceef6");
+  const muted = token("--muted-foreground", "#8d93a8");
+  const primary = token("--primary", "#8b9cff");
+  const success = token("--success", "#3fd68a");
+  const warning = token("--warning", "#f3c355");
   const border = token("--glass-border", "rgba(255,255,255,0.1)");
   const glow1 = token("--glow-1", "#1d3a8a");
   const glow2 = token("--glow-2", "#4c1d95");
+  const surface = token("--glass-strong", "rgba(255,255,255,0.07)");
+  const highlight = token("--glass-highlight", "rgba(255,255,255,0.09)");
 
   const sans =
     '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif';
@@ -107,7 +109,7 @@ export async function renderShareCard(result: SavedResult): Promise<Blob> {
   const ch = H - 160;
   ctx.save();
   roundRect(ctx, cx, cy, cw, ch, 28);
-  ctx.fillStyle = "rgba(255,255,255,0.045)";
+  ctx.fillStyle = surface;
   ctx.fill();
   ctx.strokeStyle = border;
   ctx.lineWidth = 1.5;
@@ -115,7 +117,7 @@ export async function renderShareCard(result: SavedResult): Promise<Blob> {
   // top inner highlight
   roundRect(ctx, cx, cy, cw, ch, 28);
   ctx.clip();
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillStyle = highlight;
   ctx.fillRect(cx, cy, cw, 1.5);
   ctx.restore();
 

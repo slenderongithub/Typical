@@ -25,7 +25,7 @@ export function GazeStatusPill() {
   const meta = STATUS_META[status];
   return (
     <span
-      className="glass flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-muted-foreground"
+      className="glass flex h-8 items-center gap-2 rounded-full px-3.5 text-[0.8125rem] text-muted-foreground"
       role="status"
       aria-live="polite"
     >

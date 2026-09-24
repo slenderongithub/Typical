@@ -45,6 +45,7 @@ export function BackgroundGlow() {
   return (
     <>
       <div className="bg-glow-field" aria-hidden>
+        <div className="glow-grid" />
         <div className="glow-3" />
       </div>
       <motion.div
@@ -58,7 +59,7 @@ export function BackgroundGlow() {
           borderRadius: "50%",
           filter: "blur(60px)",
           background:
-            "radial-gradient(circle at center, color-mix(in oklch, var(--primary) 8%, transparent), transparent 70%)",
+            "radial-gradient(circle at center, color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%)",
           willChange: "transform",
         }}
         initial={{ opacity: 0 }}

@@ -18,9 +18,9 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div className="glass flex flex-col gap-1.5 rounded-3xl px-5 py-4">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-[1.6rem] font-semibold leading-none text-foreground">
+    <div className="glass flex flex-col gap-2 rounded-2xl px-5 py-4">
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      <span className="flex h-8 items-center text-[1.625rem] font-semibold tabular-nums tracking-tight text-foreground">
         {children}
       </span>
     </div>

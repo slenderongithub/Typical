@@ -14,10 +14,10 @@ export function MissedWords({ words, onPractice }: MissedWordsProps) {
   const top = words.slice(0, 12);
   return (
     <div className="flex h-full flex-col">
-      <h3 className="mb-1 text-sm font-medium text-foreground">
+      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">
         most-missed words
       </h3>
-      <p className="mb-4 text-xs text-muted-foreground">
+      <p className="mb-4 text-[13px] text-muted-foreground">
         committed with at least one error
       </p>
       {top.length === 0 ? (

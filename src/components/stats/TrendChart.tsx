@@ -258,7 +258,7 @@ export function TrendChart({
         )}
         {hovered && (
           <div
-            className="glass-strong pointer-events-none absolute z-10 rounded-xl px-3 py-2"
+            className="popover pointer-events-none absolute z-10 rounded-xl px-3 py-2"
             // `.glass-strong` forces `position: relative` (unlayered, beats the
             // `absolute` utility) — pin it absolute inline so the tooltip stays
             // in the plot instead of dropping into the content below.

@@ -1,5 +1,11 @@
 export { BackgroundGlow } from "./BackgroundGlow";
-export { GlassButton, type GlassButtonProps } from "./GlassButton";
+export {
+  buttonClasses,
+  GlassButton,
+  type ButtonSize,
+  type ButtonVariant,
+  type GlassButtonProps,
+} from "./GlassButton";
 export { GlassDot, type GlassDotProps } from "./GlassDot";
 export { GlassPanel, type GlassPanelProps } from "./GlassPanel";
 export { GlassPill, type GlassPillOption, type GlassPillProps } from "./GlassPill";

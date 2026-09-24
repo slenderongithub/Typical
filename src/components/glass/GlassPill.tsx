@@ -18,11 +18,15 @@ export interface GlassPillProps {
   size?: "sm" | "md";
   ariaLabel: string;
   className?: string;
+  /** `flat` drops the glass track — for pills nested inside another surface. */
+  variant?: "glass" | "flat";
+  /** Stretch segments equally across the available width. */
+  fullWidth?: boolean;
 }
 
 const SIZES = {
-  sm: "px-2.5 py-1 text-[0.8125rem]",
-  md: "px-3.5 py-1.5 text-sm",
+  sm: "h-7 px-3 text-[0.8125rem]",
+  md: "h-9 px-4 text-sm",
 } as const;
 
 /**
@@ -36,10 +40,13 @@ export function GlassPill({
   size = "md",
   ariaLabel,
   className,
+  variant = "glass",
+  fullWidth = false,
 }: GlassPillProps) {
   const layoutId = useId();
   const reduceMotion = useReducedMotion();
   const groupRef = useRef<HTMLDivElement>(null);
+  const hasActive = options.some((o) => o.value === value);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const idx = options.findIndex((o) => o.value === value);
@@ -64,23 +71,28 @@ export function GlassPill({
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
       className={cn(
-        "glass flex items-center gap-0.5 rounded-full p-1",
+        "flex items-center gap-0.5 rounded-full",
+        variant === "glass" && "glass p-1",
+        fullWidth && "w-full",
         className,
       )}
     >
-      {options.map((opt) => {
+      {options.map((opt, idx) => {
         const active = opt.value === value;
+        // keep the group reachable by Tab even when no segment is selected
+        const tabbable = active || (!hasActive && idx === 0);
         return (
           <button
             key={opt.value}
             type="button"
             role="radio"
             aria-checked={active}
-            tabIndex={active ? 0 : -1}
+            tabIndex={tabbable ? 0 : -1}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "relative flex select-none items-center gap-1.5 rounded-full font-medium transition-colors duration-200",
+              "relative flex select-none items-center justify-center gap-1.5 rounded-full font-medium transition-colors duration-200",
               SIZES[size],
+              fullWidth && "flex-1",
               active
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -89,7 +101,7 @@ export function GlassPill({
             {active && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-full bg-glass-strong shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
+                className="absolute inset-0 rounded-full border border-glass-border bg-glass-strong shadow-[inset_0_1px_0_0_var(--glass-highlight),0_1px_3px_-1px_var(--glass-shadow)]"
                 transition={
                   reduceMotion
                     ? { duration: 0 }

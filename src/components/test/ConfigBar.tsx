@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AtSign, Hash } from "lucide-react";
+import { AtSign, Hash, PencilLine } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { GlassButton, GlassPill } from "@/components/glass";
@@ -20,6 +20,15 @@ const DURATIONS = [15, 30, 60, 120];
 const WORD_COUNTS = [10, 25, 50, 100];
 const QUOTE_LENGTHS: QuoteLength[] = ["short", "medium", "long", "all"];
 const DIFFICULTIES: Difficulty[] = ["normal", "expert", "master"];
+const DIFFICULTY_HINTS: Record<Difficulty, string> = {
+  normal: "mistakes are allowed",
+  expert: "fails on any word committed with an error",
+  master: "fails on any mistake — or any look away, with the camera on",
+};
+
+function Divider() {
+  return <span aria-hidden className="mx-1 hidden h-4 w-px bg-glass-border sm:block" />;
+}
 
 /** Toggle chip for punctuation / numbers. */
 function ToggleChip({
@@ -39,9 +48,9 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-medium transition-colors duration-200",
+        "flex h-7 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium transition-colors duration-200",
         active
-          ? "bg-glass-strong text-primary shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
+          ? "bg-primary/15 text-primary"
           : "text-muted-foreground hover:text-foreground",
       )}
     >
@@ -77,13 +86,14 @@ function CustomValue({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "rounded-full px-3 py-1.5 text-[0.8125rem] font-medium transition-colors",
+          "h-7 rounded-full border px-3 text-[0.8125rem] font-medium transition-colors",
           active
-            ? "bg-glass-strong text-foreground shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
-            : "text-muted-foreground hover:text-foreground",
+            ? "border-glass-border bg-glass-strong text-foreground shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
+            : "border-transparent text-muted-foreground hover:text-foreground",
         )}
+        aria-expanded={open}
       >
-        custom
+        {active ? value : "custom"}
       </button>
       <AnimatePresence>
         {open && (
@@ -92,20 +102,10 @@ function CustomValue({
             animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
             exit={{ opacity: 0, y: 6, scale: 0.95, x: "-50%" }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
-            // Opaque, absolutely-positioned popover. `.glass-strong` would force
-            // position:relative (unlayered CSS beats the `absolute` utility),
-            // dropping the form in-flow and wrecking the config-bar row; drop it
-            // for a solid surface. Centering lives in framer's `x` because
-            // animating y/scale makes framer own the whole transform (so a
-            // `-translate-x-1/2` class is silently ignored).
-            style={{
-              position: "absolute",
-              background:
-                "color-mix(in srgb, var(--background) 90%, var(--foreground) 10%)",
-              boxShadow:
-                "0 14px 36px -12px var(--glass-shadow), 0 2px 8px -3px var(--glass-shadow)",
+            className="popover absolute left-1/2 top-full z-30 mt-2.5 flex items-center gap-1.5 rounded-2xl p-1.5"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setOpen(false);
             }}
-            className="absolute left-1/2 top-full z-30 mt-2 flex items-center gap-2 rounded-2xl border border-glass-border p-2"
             onSubmit={(e) => {
               e.preventDefault();
               const v = Math.floor(Number(draft));
@@ -120,7 +120,7 @@ function CustomValue({
               inputMode="numeric"
               value={draft}
               onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, ""))}
-              className="w-20 rounded-xl bg-glass px-3 py-1.5 text-sm text-foreground outline-none placeholder:text-faint-foreground"
+              className="h-8 w-24 rounded-xl border border-glass-border bg-glass px-3 text-sm tabular-nums text-foreground outline-none placeholder:text-faint-foreground focus:border-primary/60 focus-visible:outline-none"
               placeholder={unit}
               aria-label={`custom ${unit}`}
             />
@@ -163,22 +163,25 @@ function CustomTextModal({
           role="dialog"
           aria-modal="true"
           aria-label="custom text"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClose();
+          }}
         >
           <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/70 backdrop-blur-md"
             onClick={onClose}
           />
           <motion.div
-            className="glass-strong relative w-full max-w-lg rounded-3xl p-6"
+            className="popover relative w-full max-w-lg rounded-3xl p-6"
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
           >
-            <h2 className="mb-1 text-base font-semibold text-foreground">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
               your own text
             </h2>
-            <p className="mb-4 text-xs text-muted-foreground">
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">
               paste or type any passage — at least 10 characters
             </p>
             <textarea
@@ -186,10 +189,13 @@ function CustomTextModal({
               onChange={(e) => setDraft(e.target.value)}
               rows={6}
               autoFocus
-              className="w-full resize-none rounded-2xl bg-glass p-4 font-mono text-sm text-foreground outline-none placeholder:text-faint-foreground"
+              className="w-full resize-none rounded-2xl border border-glass-border bg-glass p-4 font-mono text-sm leading-relaxed text-foreground outline-none transition-colors placeholder:text-faint-foreground focus:border-primary/60 focus-visible:outline-none"
               placeholder="once upon a midnight dreary…"
             />
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <span className="mr-auto text-xs tabular-nums text-faint-foreground">
+                {draft.trim().length} chars
+              </span>
               <GlassButton variant="ghost" onClick={onClose}>
                 cancel
               </GlassButton>
@@ -224,141 +230,166 @@ export function ConfigBar({ config, onChange, disabled }: ConfigBarProps) {
   const patch = (p: Partial<TestConfig>) => onChange({ ...config, ...p });
 
   return (
-    <motion.div
-      className={cn(
-        "glass flex max-w-full flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-full px-2.5 py-2 transition-opacity duration-300",
-        disabled && "pointer-events-none opacity-40",
-      )}
-      layout
-    >
-      <GlassPill
-        size="sm"
-        ariaLabel="test mode"
-        options={MODES}
-        value={config.mode}
-        onChange={(mode) => {
-          patch({ mode: mode as TestMode });
-          if (mode === "custom" && !config.customText) setTextModal(true);
-        }}
-      />
+    <>
+      <div
+        className={cn(
+          "glass flex max-w-full flex-wrap items-center justify-center gap-x-1 gap-y-1.5 rounded-[1.375rem] p-1.5 transition-opacity duration-300",
+          disabled && "pointer-events-none opacity-30",
+        )}
+      >
+        <GlassPill
+          size="sm"
+          variant="flat"
+          ariaLabel="test mode"
+          options={MODES}
+          value={config.mode}
+          onChange={(mode) => {
+            // custom with no text yet would start an empty test — ask for the
+            // passage first; saving it switches the mode
+            if (mode === "custom" && !config.customText) setTextModal(true);
+            else patch({ mode: mode as TestMode });
+          }}
+        />
 
-      <span aria-hidden className="mx-1 h-5 w-px bg-glass-border" />
+        <Divider />
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={config.mode}
-          className="flex items-center gap-0.5"
-          initial={{ opacity: 0, x: 8 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -8 }}
-          transition={{ type: "spring", stiffness: 420, damping: 34 }}
-        >
-          {config.mode === "time" && (
-            <>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={config.mode}
+            className="flex items-center gap-0.5"
+            initial={{ opacity: 0, x: 6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          >
+            {config.mode === "time" && (
+              <>
+                <GlassPill
+                  size="sm"
+                  variant="flat"
+                  ariaLabel="test duration in seconds"
+                  options={DURATIONS.map((d) => ({ value: String(d), label: String(d) }))}
+                  value={DURATIONS.includes(config.duration) ? String(config.duration) : ""}
+                  onChange={(v) => patch({ duration: Number(v) })}
+                />
+                <CustomValue
+                  active={!DURATIONS.includes(config.duration)}
+                  value={config.duration}
+                  unit="seconds"
+                  onSubmit={(duration) => patch({ duration })}
+                />
+              </>
+            )}
+
+            {config.mode === "words" && (
+              <>
+                <GlassPill
+                  size="sm"
+                  variant="flat"
+                  ariaLabel="word count"
+                  options={WORD_COUNTS.map((d) => ({ value: String(d), label: String(d) }))}
+                  value={WORD_COUNTS.includes(config.wordCount) ? String(config.wordCount) : ""}
+                  onChange={(v) => patch({ wordCount: Number(v) })}
+                />
+                <CustomValue
+                  active={!WORD_COUNTS.includes(config.wordCount)}
+                  value={config.wordCount}
+                  unit="words"
+                  onSubmit={(wordCount) => patch({ wordCount })}
+                />
+              </>
+            )}
+
+            {config.mode === "quote" && (
               <GlassPill
                 size="sm"
-                ariaLabel="test duration in seconds"
-                options={DURATIONS.map((d) => ({ value: String(d), label: String(d) }))}
-                value={DURATIONS.includes(config.duration) ? String(config.duration) : ""}
-                onChange={(v) => patch({ duration: Number(v) })}
+                variant="flat"
+                ariaLabel="quote length"
+                options={QUOTE_LENGTHS.map((l) => ({ value: l, label: l }))}
+                value={config.quoteLength}
+                onChange={(quoteLength) =>
+                  patch({ quoteLength: quoteLength as QuoteLength })
+                }
               />
-              <CustomValue
-                active={!DURATIONS.includes(config.duration)}
-                value={config.duration}
-                unit="seconds"
-                onSubmit={(duration) => patch({ duration })}
-              />
-            </>
-          )}
+            )}
 
-          {config.mode === "words" && (
-            <>
-              <GlassPill
-                size="sm"
-                ariaLabel="word count"
-                options={WORD_COUNTS.map((d) => ({ value: String(d), label: String(d) }))}
-                value={WORD_COUNTS.includes(config.wordCount) ? String(config.wordCount) : ""}
-                onChange={(v) => patch({ wordCount: Number(v) })}
-              />
-              <CustomValue
-                active={!WORD_COUNTS.includes(config.wordCount)}
-                value={config.wordCount}
-                unit="words"
-                onSubmit={(wordCount) => patch({ wordCount })}
-              />
-            </>
-          )}
+            {config.mode === "custom" && (
+              <button
+                type="button"
+                onClick={() => setTextModal(true)}
+                className="flex h-7 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <PencilLine aria-hidden className="size-3.5" />
+                edit text
+              </button>
+            )}
 
-          {config.mode === "quote" && (
+            {config.mode === "zen" && (
+              <span className="flex h-7 items-center px-3 text-[0.8125rem] text-muted-foreground">
+                no target — just type
+              </span>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {(config.mode === "time" || config.mode === "words") && (
+          <>
+            <Divider />
+            <div className="flex items-center gap-0.5">
+              <ToggleChip
+                active={config.punctuation}
+                onClick={() => patch({ punctuation: !config.punctuation })}
+                icon={<AtSign />}
+                label="punctuation"
+              />
+              <ToggleChip
+                active={config.numbers}
+                onClick={() => patch({ numbers: !config.numbers })}
+                icon={<Hash />}
+                label="numbers"
+              />
+            </div>
+          </>
+        )}
+
+        {config.mode !== "zen" && (
+          <>
+            <Divider />
             <GlassPill
               size="sm"
-              ariaLabel="quote length"
-              options={QUOTE_LENGTHS.map((l) => ({ value: l, label: l }))}
-              value={config.quoteLength}
-              onChange={(quoteLength) =>
-                patch({ quoteLength: quoteLength as QuoteLength })
+              variant="flat"
+              ariaLabel="difficulty"
+              options={DIFFICULTIES.map((d) => ({
+                value: d,
+                label: (
+                  <span
+                    title={DIFFICULTY_HINTS[d]}
+                    className={cn(
+                      d === "master" && config.difficulty === "master" && "text-danger",
+                      d === "expert" && config.difficulty === "expert" && "text-warning",
+                    )}
+                  >
+                    {d}
+                  </span>
+                ),
+              }))}
+              value={config.difficulty}
+              onChange={(difficulty) =>
+                patch({ difficulty: difficulty as Difficulty })
               }
             />
-          )}
+          </>
+        )}
+      </div>
 
-          {config.mode === "custom" && (
-            <GlassButton size="sm" variant="ghost" onClick={() => setTextModal(true)}>
-              edit text
-            </GlassButton>
-          )}
-
-          {config.mode === "zen" && (
-            <span className="px-2 text-[0.8125rem] text-faint-foreground">
-              no target — just type
-            </span>
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      {(config.mode === "time" || config.mode === "words") && (
-        <>
-          <span aria-hidden className="mx-1 h-5 w-px bg-glass-border" />
-          <ToggleChip
-            active={config.punctuation}
-            onClick={() => patch({ punctuation: !config.punctuation })}
-            icon={<AtSign />}
-            label="punctuation"
-          />
-          <ToggleChip
-            active={config.numbers}
-            onClick={() => patch({ numbers: !config.numbers })}
-            icon={<Hash />}
-            label="numbers"
-          />
-        </>
-      )}
-
-      {config.mode !== "zen" && (
-        <>
-          <span aria-hidden className="mx-1 h-5 w-px bg-glass-border" />
-          <GlassPill
-            size="sm"
-            ariaLabel="difficulty"
-            options={DIFFICULTIES.map((d) => ({
-              value: d,
-              label: (
-                <span className={cn(d === "master" && "text-danger")}>{d}</span>
-              ),
-            }))}
-            value={config.difficulty}
-            onChange={(difficulty) =>
-              patch({ difficulty: difficulty as Difficulty })
-            }
-          />
-        </>
-      )}
-
+      {/* outside the glass bar: backdrop-filter makes it the containing block
+          for fixed descendants, which would trap the "full-screen" modal */}
       <CustomTextModal
         open={textModal}
         initial={config.customText ?? ""}
         onSave={(customText) => patch({ customText, mode: "custom" })}
         onClose={() => setTextModal(false)}
       />
-    </motion.div>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -25,13 +26,13 @@ function Field({
 }: React.ComponentPropsWithoutRef<"input"> & { label: string }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs text-muted-foreground">{label}</span>
-      <span className="block rounded-2xl bg-glass p-3.5 transition-shadow has-[:focus-visible]:shadow-[0_0_0_2px_var(--primary)]">
-        <input
-          className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-faint-foreground"
-          {...props}
-        />
+      <span className="mb-1.5 block text-[13px] font-medium text-foreground">
+        {label}
       </span>
+      <input
+        className="h-11 w-full rounded-xl border border-glass-border bg-glass px-3.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-faint-foreground hover:border-faint-foreground/60 focus-visible:border-primary/70 focus-visible:shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_22%,transparent)] focus-visible:outline-none"
+        {...props}
+      />
     </label>
   );
 }
@@ -101,17 +102,24 @@ export function AuthPanel() {
   };
 
   return (
-    <div className="glass-strong rounded-3xl p-7">
-      <h1 className="mb-1 text-xl font-semibold text-foreground">
+    <div className="glass-strong rounded-[1.75rem] p-7 sm:p-8">
+      <span
+        aria-hidden
+        className="btn-primary mb-5 flex size-10 items-center justify-center rounded-xl"
+      >
+        <span className="h-4.5 w-[3px] rounded-full bg-primary-foreground" />
+      </span>
+      <h1 className="text-[1.375rem] font-semibold tracking-tight text-foreground">
         {tab === "signin" ? "welcome back" : "create your account"}
       </h1>
-      <p className="mb-5 text-sm text-muted-foreground">
+      <p className="mb-6 mt-1.5 text-sm leading-relaxed text-muted-foreground">
         sync your history and enter the leaderboards — or keep practicing as a
         guest, everything works either way
       </p>
 
-      <div className="mb-5">
+      <div className="mb-6">
         <GlassPill
+          fullWidth
           ariaLabel="sign in or create account"
           options={[
             { value: "signin", label: "sign in" },
@@ -126,12 +134,12 @@ export function AuthPanel() {
       </div>
 
       {hasCredentials === false ? (
-        <p className="rounded-2xl bg-glass p-4 text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-glass-border bg-glass p-4 text-sm leading-relaxed text-muted-foreground">
           accounts need a configured database — you&apos;re in local guest
           mode, and all your stats live safely in this browser
         </p>
       ) : (
-        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3.5">
+        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
           <AnimatePresence mode="popLayout" initial={false}>
             {tab === "register" && (
               <motion.div
@@ -193,7 +201,7 @@ export function AuthPanel() {
             size="lg"
             type="submit"
             disabled={busy || hasCredentials === null}
-            className="mt-1 w-full"
+            className="mt-2 w-full"
             icon={busy ? <Loader2 className="animate-spin" /> : undefined}
           >
             {tab === "signin" ? "sign in" : "create account"}
@@ -209,6 +217,7 @@ export function AuthPanel() {
             <span className="h-px flex-1 bg-glass-border" />
           </div>
           <GlassButton
+            size="lg"
             className="w-full"
             icon={<GithubMark />}
             onClick={() => void signIn("github", { callbackUrl: "/" })}
@@ -217,6 +226,16 @@ export function AuthPanel() {
           </GlassButton>
         </>
       )}
+
+      <p className="mt-6 text-center text-[13px] text-muted-foreground">
+        or{" "}
+        <Link
+          href="/"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          keep typing as a guest
+        </Link>
+      </p>
     </div>
   );
 }

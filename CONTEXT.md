@@ -379,6 +379,65 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
     framer's `x`/`y` instead.** All five known instances are now fixed
     (WpmChart, TrendChart, IntegrityBadge, ConfigBar, WordStream).
 
+## Recent fixes — round 7 (2026-09-25): UI overhaul + claim-banner bug
+
+- **"Claim your runs" nagged signed-in users — root-caused.** Runs finished
+  while signed in were POSTed to `/api/results` but never marked `synced`
+  locally, so `ClaimGate` offered every one of them as a "guest run". Worse,
+  `handleFinish` read `sessionStatus` from a closure captured when the engine
+  was built (usually while the session was still `"loading"`), so the first run
+  after every page load was never uploaded at all. Fixes: `sessionStatusRef` in
+  `TestExperience`; `markSynced([id])` on a 2xx; one retry after 6.5s on a 429
+  (the per-user submit throttle trips on back-to-back short tests).
+  `saveResult`/`markSynced` now use idb-keyval's atomic `update()` so a
+  background mark can't clobber a concurrent save.
+- **`/api/results/claim` is idempotent + tolerant.** It skips runs the account
+  already holds (same configKey, wpm ±0.01, durationMs ±1, createdAt within 2
+  min), so claiming never duplicates live-submitted runs. It also validates
+  per record, so one bad record no longer 400s the whole batch. Every handled
+  id comes back in `claimed`. `ClaimGate` batches past 200, hides on 503 (no
+  DB), shows errors, and has a per-tab "not now" (`sessionStorage`
+  `typical:claim-dismissed`).
+- **`.glass*` classes moved into `@layer components`** in globals.css, so
+  Tailwind utilities (`absolute`, `bg-*`, `border-*`) now override them. This
+  is the real root fix for the round-6 gotcha. The inline `position:absolute`
+  hacks are now redundant but harmless; the danger button's red fill finally
+  applies.
+- **New shared classes/tokens:** `.popover` (opaque elevated surface, backed by
+  the new `--popover` token and `bg-popover`) for every menu/tooltip/modal.
+  Also `.btn-primary` (the one filled accent), `.kbd` (key caps), `.eyebrow`
+  (section labels), `--grid-dot` (faint dot grid in `BackgroundGlow`).
+  `buttonClasses()` is exported from GlassButton so a `<Link>` can look like a
+  button without nesting a `<button>` in an `<a>` (it's a client module, so
+  don't call it from server components). Icon-only GlassButtons are now square.
+  `GlassPill` gained `variant="flat"` and `fullWidth`.
+- **Palettes redone** for all 4 themes: midnight = ink-indigo `#8b9cff`, dawn =
+  indigo `#4f5ce6` with dark hairline borders, aurora = mint `#4fe0ad`, sunset =
+  coral `#ff9468`. Swatches live in `THEMES` (exported from ThemeToggle, reused
+  by SettingsView).
+- **Bugs fixed along the way:**
+  - Picking "custom" mode never opened the text modal. The whole test block was
+    keyed on seed+config, so the ConfigBar remounted and lost its state; now
+    only the word stage re-keys. Custom with no text asks for the text first.
+  - The custom-text modal was rendered inside the glass config bar;
+    `backdrop-filter` makes that bar the containing block for `fixed` children.
+  - "Revoke camera consent" never stopped the webcam stream.
+  - The global `:focus-visible` rule reset `border-radius` to 6px, which
+    re-shaped pills on focus.
+  - Leaderboard fetches weren't aborted on filter change (stale responses
+    could win).
+  - The default create-next-app `favicon.ico` shadowed the brand icon
+    (removed; `icon.svg` redrawn as the caret logo).
+  - The nav overflowed on phones (links collapse to icons below `sm`).
+- **Layout:** shared `PageHeader` (title + description) on stats, leaderboard
+  and settings. The home page centres the typing stage vertically, with the
+  camera controls as one quiet row under the config bar. Word tilt eased to
+  `rotateX(12deg)` / `perspective: 1600px`, because the old 22deg/800px keystone
+  made the edge glyphs look italic.
+- Known gaps (not bugs introduced here): `/api/settings` has no client caller,
+  so settings don't sync to accounts. The stats page reads only local
+  IndexedDB, so a signed-in user on a new device sees no server history.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

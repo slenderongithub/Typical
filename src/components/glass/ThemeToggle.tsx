@@ -13,11 +13,11 @@ import { startThemeTransition } from "./theme-transition";
  * Swatch previews of *other* themes — the one sanctioned exception to the
  * token-only color rule, since tokens can only describe the active theme.
  */
-const THEMES = [
-  { name: "midnight", swatch: "#6ea8ff" },
-  { name: "dawn", swatch: "#007aff" },
-  { name: "aurora", swatch: "#34d399" },
-  { name: "sunset", swatch: "#fb923c" },
+export const THEMES = [
+  { name: "midnight", swatch: "#8b9cff", bg: "#07080d", fg: "#eceef6" },
+  { name: "dawn", swatch: "#4f5ce6", bg: "#f4f4f7", fg: "#15171f" },
+  { name: "aurora", swatch: "#4fe0ad", bg: "#050c0b", fg: "#e5f4ee" },
+  { name: "sunset", swatch: "#ff9468", bg: "#0d0807", fg: "#f7ede7" },
 ] as const;
 
 /** Compact theme switcher — polygon view-transition reveal on select. */
@@ -53,7 +53,11 @@ export function ThemeToggle() {
         aria-label="change theme"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="glass glass-interactive flex size-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+        aria-haspopup="menu"
+        className={cn(
+          "flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-glass-strong hover:text-foreground",
+          open && "bg-glass-strong text-foreground",
+        )}
       >
         <Palette className="size-4" />
       </button>
@@ -65,20 +69,7 @@ export function ThemeToggle() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 500, damping: 40 }}
-            className="absolute right-0 top-full z-50 mt-2 flex min-w-40 flex-col gap-0.5 rounded-xl border border-glass-border p-1.5"
-            // Clean solid dropdown — NOT the frosted `.glass-strong` surface,
-            // which read as a big translucent liquid-glass blob. Opaque surface
-            // tinted with the theme's own accent (`--primary`) so the menu
-            // visibly takes on the active theme's hue — blue in midnight, green
-            // in aurora, warm in sunset. A plain background↔foreground mix was
-            // near-black in every dark theme, so the hue never read (and looked
-            // faintly warm/red by contrast against the cool ambient glow).
-            style={{
-              background:
-                "color-mix(in srgb, var(--background) 84%, var(--primary) 16%)",
-              boxShadow:
-                "0 12px 32px -12px var(--glass-shadow), 0 2px 6px -3px var(--glass-shadow)",
-            }}
+            className="popover absolute right-0 top-full z-50 mt-2.5 flex w-44 flex-col gap-0.5 rounded-2xl p-1.5"
             role="menu"
           >
             {THEMES.map((t) => {
@@ -94,17 +85,22 @@ export function ThemeToggle() {
                     if (!active) startThemeTransition(() => setTheme(t.name));
                   }}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+                    "flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-sm transition-colors",
                     active
                       ? "bg-glass-strong text-foreground"
-                      : "text-muted-foreground hover:bg-glass hover:text-foreground",
+                      : "text-muted-foreground hover:bg-glass-strong hover:text-foreground",
                   )}
                 >
                   <span
                     aria-hidden
-                    className="size-3 rounded-full border border-glass-border"
-                    style={{ backgroundColor: t.swatch }}
-                  />
+                    className="flex size-5 items-center justify-center rounded-md ring-1 ring-inset ring-glass-border"
+                    style={{ backgroundColor: t.bg }}
+                  >
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: t.swatch }}
+                    />
+                  </span>
                   {t.name}
                   {active && <Check className="ml-auto size-3.5 text-primary" />}
                 </button>

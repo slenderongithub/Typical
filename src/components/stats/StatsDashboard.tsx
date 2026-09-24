@@ -35,7 +35,7 @@ function Skeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="glass h-[88px] animate-pulse rounded-3xl" />
+        <div key={i} className="glass h-[88px] animate-pulse rounded-2xl" />
       ))}
     </div>
   );
@@ -73,8 +73,8 @@ export function StatsDashboard() {
   if (results.length === 0) {
     return (
       <GlassPanel pad="lg" className="flex flex-col items-center gap-4 text-center">
-        <span className="glass flex size-14 items-center justify-center rounded-full text-primary">
-          <Keyboard className="size-6" />
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+          <Keyboard className="size-5" />
         </span>
         <div>
           <h2 className="text-lg font-semibold text-foreground">

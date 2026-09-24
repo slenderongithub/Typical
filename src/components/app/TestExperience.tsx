@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ScanFace, Square, VideoOff } from "lucide-react";
+import { CircleAlert, Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import { createRng, randomSeed } from "@/lib/engine/rng";
 import { getController, useGazeStore } from "@/lib/gaze/store";
 import {
   applyPersonalBest,
+  markSynced,
   saveResult,
   touchStreak,
 } from "@/lib/storage/local";
@@ -44,7 +45,7 @@ import {
   type SavedResult,
   type TestConfig,
 } from "@/lib/types";
-import { uid } from "@/lib/utils";
+import { cn, uid } from "@/lib/utils";
 
 type Phase = "test" | "results";
 
@@ -107,8 +108,10 @@ export function TestExperience() {
   const gazeSessionRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const tabArmedRef = useRef(0);
+  const sessionStatusRef = useRef(sessionStatus);
 
   useEffect(() => {
+    sessionStatusRef.current = sessionStatus;
     phaseRef.current = phase;
     overlayRef.current = overlay;
     configRef.current = config;
@@ -196,25 +199,41 @@ export function TestExperience() {
       setPbInfo(pb);
       setPhase("results");
 
-      // best-effort server sync when signed in — guest mode stays local
-      if (sessionStatus === "authenticated") {
+      // best-effort server sync when signed in — guest mode stays local. Read
+      // the session through a ref: this callback is captured by the engine's
+      // finish subscription when the engine is built (often while the session
+      // is still "loading"), so a closed-over status would be stale.
+      if (sessionStatusRef.current === "authenticated") {
         const payload: Partial<SavedResult> = { ...result };
         delete payload.id;
         delete payload.synced;
-        void fetch("/api/results", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            result: payload,
-            timingFingerprint: engineDone
-              .getKeystrokeIntervals()
-              .slice(0, 300)
-              .map((n) => Math.round(n)),
-          }),
-        }).catch(() => {});
+        const body = JSON.stringify({
+          result: payload,
+          timingFingerprint: engineDone
+            .getKeystrokeIntervals()
+            .slice(0, 300)
+            .map((n) => Math.round(n)),
+        });
+        const submit = async (retry: boolean): Promise<void> => {
+          const res = await fetch("/api/results", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body,
+          });
+          if (res.ok) {
+            // it's in the account now — never offer it as a guest run to claim
+            await markSynced([result.id]);
+          } else if (res.status === 429 && retry) {
+            // back-to-back short tests trip the per-user submit throttle; wait
+            // it out once rather than stranding the run as "unsynced"
+            await new Promise((r) => setTimeout(r, 6500));
+            await submit(false);
+          }
+        };
+        void submit(true).catch(() => {});
       }
     },
-    [endGazeSession, sessionStatus, setTestRunning],
+    [endGazeSession, setTestRunning],
   );
 
   const buildEngine = useCallback(
@@ -548,45 +567,52 @@ export function TestExperience() {
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center">
       <AnimatePresence mode="wait">
         {phase === "test" ? (
+          // keyed on the phase only: the config bar must stay mounted across
+          // config changes (re-keying remounted it, wiping its custom-text
+          // modal state), so only the word stage below re-keys per run
           <motion.div
-            key={`test-${seed}-${configKey(config)}`}
+            key="test"
             className="flex w-full flex-1 flex-col items-center"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: "spring", stiffness: 260, damping: 30 }}
           >
-            {/* gaze controls row */}
-            <div className="mb-6 flex items-center gap-2">
-              {gaze.supported && (
-                <>
+            <ConfigBar
+              config={config}
+              onChange={onConfigChange}
+              disabled={testRunning}
+            />
+
+            {/* gaze controls — the verification USP, kept one quiet row */}
+            {gaze.supported && (
+              <div
+                className={cn(
+                  "mt-4 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-300",
+                  testRunning && "pointer-events-none opacity-30",
+                )}
+              >
+                <GlassButton
+                  size="sm"
+                  variant={gaze.cameraOn ? "default" : "ghost"}
+                  onClick={onGazeButton}
+                  icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
+                >
+                  {gaze.cameraOn ? "turn camera off" : "verify with camera"}
+                </GlassButton>
+                {gaze.cameraOn && !gaze.calibrated && (
                   <GlassButton
                     size="sm"
-                    variant={gaze.cameraOn ? "default" : "ghost"}
-                    onClick={onGazeButton}
-                    icon={
-                      gaze.cameraOn ? (
-                        <VideoOff className="size-3.5" />
-                      ) : (
-                        <ScanFace className="size-3.5" />
-                      )
-                    }
+                    variant="primary"
+                    icon={<Crosshair />}
+                    onClick={() => setCalibrating(true)}
                   >
-                    {gaze.cameraOn ? "camera off" : "verify with camera"}
+                    calibrate
                   </GlassButton>
-                  {gaze.cameraOn && !gaze.calibrated && (
-                    <GlassButton
-                      size="sm"
-                      variant="primary"
-                      onClick={() => setCalibrating(true)}
-                    >
-                      calibrate
-                    </GlassButton>
-                  )}
-                  {gaze.cameraOn && <GazeStatusPill />}
-                </>
-              )}
-            </div>
+                )}
+                {gaze.cameraOn && <GazeStatusPill />}
+              </div>
+            )}
 
             <AnimatePresence>
               {gaze.error && (
@@ -594,7 +620,7 @@ export function TestExperience() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="-mt-3 mb-4 text-xs text-danger"
+                  className="mt-3 max-w-md text-center text-xs text-danger"
                   role="alert"
                 >
                   {gaze.error}
@@ -602,57 +628,64 @@ export function TestExperience() {
               )}
             </AnimatePresence>
 
-            <ConfigBar
-              config={config}
-              onChange={onConfigChange}
-              disabled={testRunning}
-            />
-
-            <div className="relative mt-14 w-full">
-              {engine && (
-                <div className="mb-4 flex h-10 items-end justify-center">
-                  <LiveStats engine={engine} />
-                </div>
-              )}
-              {engine && (
-                <WordStream
-                  engine={engine}
-                  focused={streamFocused}
-                  onRequestFocus={() => setStreamFocused(true)}
-                />
-              )}
-              <FocusOverlay kind={overlay} onResume={resumeFromOverlay} />
-            </div>
-
-            <AnimatePresence>
-              {failedNotice && (
-                <motion.p
+            {/* the typing stage — centred in the remaining height */}
+            <div className="flex w-full flex-1 flex-col justify-center py-10 sm:py-14">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`stage-${seed}-${configKey(config)}`}
+                  className="relative w-full"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-6 text-sm text-danger"
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 32 }}
                 >
-                  {failedNotice}
-                </motion.p>
-              )}
-            </AnimatePresence>
+                  {engine && (
+                    <div className="mb-3 flex h-9 items-end justify-center">
+                      <LiveStats engine={engine} />
+                    </div>
+                  )}
+                  {engine && (
+                    <WordStream
+                      engine={engine}
+                      focused={streamFocused}
+                      onRequestFocus={() => setStreamFocused(true)}
+                    />
+                  )}
+                  <FocusOverlay kind={overlay} onResume={resumeFromOverlay} />
+                </motion.div>
+              </AnimatePresence>
 
-            <div className="mt-10">
-              <RestartHint />
+              <div className="mt-6 flex h-6 items-center justify-center">
+                <AnimatePresence>
+                  {failedNotice && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      role="alert"
+                      className="flex items-center gap-2 rounded-full border border-danger/25 bg-danger/10 px-3.5 py-1 text-[13px] text-danger"
+                    >
+                      <CircleAlert aria-hidden className="size-3.5" />
+                      {failedNotice}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
-            {isZen && running && (
-              <div className="mt-4">
+            <div className="flex flex-col items-center gap-4">
+              {isZen && running && (
                 <GlassButton
                   size="sm"
-                  variant="ghost"
-                  icon={<Square className="size-3" />}
+                  variant="default"
+                  icon={<Square />}
                   onClick={() => engineRef.current?.finish("completed")}
                 >
                   end zen session
                 </GlassButton>
-              </div>
-            )}
+              )}
+              <RestartHint />
+            </div>
           </motion.div>
         ) : (
           saved && (

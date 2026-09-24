@@ -31,9 +31,9 @@ const item = {
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="glass-subtle flex flex-col gap-1 rounded-2xl px-4 py-3">
+    <div className="glass-subtle flex flex-col gap-1.5 rounded-2xl px-4 py-3.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-[1.375rem] font-semibold leading-tight text-foreground">
+      <span className="flex h-7 items-center text-[1.375rem] font-semibold tabular-nums tracking-tight text-foreground">
         {value}
       </span>
     </div>
@@ -74,41 +74,39 @@ export function ResultsScreen({
       animate="show"
     >
       {/* hero */}
-      <motion.div variants={item} className="flex flex-col items-center gap-3">
-        <div className="flex items-end gap-8">
-          <div className="flex items-baseline gap-3">
-            <SmoothNumber
-              value={Math.round(result.wpm)}
-              className="text-8xl font-semibold tracking-tight text-foreground"
-            />
-            <span className="text-2xl text-muted-foreground">wpm</span>
-          </div>
-          <div className="flex items-baseline gap-2 pb-2.5">
-            <SmoothNumber
-              value={Math.round(result.accuracy)}
-              suffix="%"
-              className="text-4xl font-semibold text-foreground"
-            />
-            <span className="text-sm text-muted-foreground">acc</span>
-          </div>
+      <motion.div variants={item} className="flex flex-col items-center gap-4">
+        {/* two-row grid: numbers share one baseline, labels share the next */}
+        <div className="grid grid-cols-[auto_auto] items-baseline justify-items-center gap-x-10 gap-y-1 sm:gap-x-14">
+          <SmoothNumber
+            value={Math.round(result.wpm)}
+            className="text-7xl font-semibold leading-none tracking-tighter text-primary sm:text-8xl"
+          />
+          <SmoothNumber
+            value={Math.round(result.accuracy)}
+            suffix="%"
+            className="text-5xl font-semibold leading-none tracking-tighter text-foreground sm:text-6xl"
+          />
+          <span className="eyebrow">wpm</span>
+          <span className="eyebrow">accuracy</span>
         </div>
 
-        <div className="flex h-8 items-center">
-          {pb.isNewBest ? (
-            <PBCelebration />
-          ) : delta !== null ? (
-            <span className="rounded-full bg-glass px-3 py-1 text-xs text-muted-foreground">
+        {pb.isNewBest ? (
+          <PBCelebration />
+        ) : delta !== null ? (
+          <span className="rounded-full border border-glass-border bg-glass px-3 py-1 text-xs tabular-nums text-muted-foreground">
+            <span className={delta >= 0 ? "text-success" : "text-foreground"}>
               {delta >= 0 ? "+" : ""}
-              {delta.toFixed(1)} vs best {pb.previous!.wpm.toFixed(1)}
-            </span>
-          ) : null}
-        </div>
+              {delta.toFixed(1)}
+            </span>{" "}
+            vs your best of {pb.previous!.wpm.toFixed(1)}
+          </span>
+        ) : null}
       </motion.div>
 
       {/* verified score — only when the camera was watching */}
       {showTrackedStats && (
         <motion.div variants={item}>
-          <div className="glass-subtle flex items-center gap-4 rounded-2xl px-5 py-3.5">
+          <div className="glass flex items-center gap-5 rounded-2xl px-5 py-4">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">
                 verified score
@@ -234,10 +232,11 @@ export function ResultsScreen({
         </GlassButton>
       </motion.div>
 
-      <motion.p variants={item} className="text-xs text-faint-foreground">
-        <kbd className="glass-subtle rounded-md px-1.5 py-0.5 font-mono text-[11px]">
-          tab
-        </kbd>{" "}
+      <motion.p
+        variants={item}
+        className="-mt-3 flex items-center gap-1.5 text-xs text-faint-foreground"
+      >
+        <kbd className="kbd">tab</kbd>
         next test
       </motion.p>
     </motion.div>

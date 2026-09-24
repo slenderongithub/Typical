@@ -3,7 +3,7 @@
  * complete without an account. All functions no-op safely on the server.
  */
 
-import { get, set } from "idb-keyval";
+import { get, set, update } from "idb-keyval";
 
 import {
   type IntegrityStatus,
@@ -29,17 +29,17 @@ export async function getResults(): Promise<SavedResult[]> {
 /** Prepends (newest first); trims history beyond MAX_RESULTS. */
 export async function saveResult(r: SavedResult): Promise<void> {
   if (onServer()) return;
-  const all = await getResults();
-  await set(K_RESULTS, [r, ...all].slice(0, MAX_RESULTS));
+  // atomic read-modify-write: a background markSynced can't clobber this save
+  await update<SavedResult[]>(K_RESULTS, (all) =>
+    [r, ...(all ?? [])].slice(0, MAX_RESULTS),
+  );
 }
 
 export async function markSynced(ids: string[]): Promise<void> {
   if (onServer() || ids.length === 0) return;
   const idSet = new Set(ids);
-  const all = await getResults();
-  await set(
-    K_RESULTS,
-    all.map((r) => (idSet.has(r.id) ? { ...r, synced: true } : r)),
+  await update<SavedResult[]>(K_RESULTS, (all) =>
+    (all ?? []).map((r) => (idSet.has(r.id) ? { ...r, synced: true } : r)),
   );
 }
 

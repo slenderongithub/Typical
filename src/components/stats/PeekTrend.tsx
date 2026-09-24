@@ -28,8 +28,8 @@ export function PeekTrend({ results }: PeekTrendProps) {
 
   return (
     <div>
-      <h3 className="mb-1 text-sm font-medium text-foreground">peek trend</h3>
-      <p className="mb-3 text-xs text-muted-foreground">
+      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">peek trend</h3>
+      <p className="mb-3 text-[13px] text-muted-foreground">
         peeks per test — trending down means your eyes are staying up
       </p>
       {points.length < 2 ? (

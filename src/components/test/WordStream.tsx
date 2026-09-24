@@ -6,6 +6,7 @@ import {
   useMotionValue,
   useSpring,
 } from "framer-motion";
+import { MousePointerClick } from "lucide-react";
 import { Fragment, memo, useEffect, useLayoutEffect, useRef } from "react";
 
 import type { TypingEngine } from "@/lib/engine/engine";
@@ -180,9 +181,10 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
       className="relative mx-auto w-full max-w-5xl cursor-text px-1"
       style={{
         height: `${LINE_HEIGHT_REM * VISIBLE_LINES}rem`,
-        // Perspective for the tilted word window below. A short focal length
-        // gives the lines real receding depth.
-        perspective: "800px",
+        // Perspective for the tilted word window below. A longer focal length
+        // keeps the receding depth while avoiding the heavy keystone skew
+        // (glyphs at the edges leaning like italics) a short one produced.
+        perspective: "1600px",
       }}
       onClick={onRequestFocus}
       role="textbox"
@@ -201,7 +203,7 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
       <div
         className="absolute inset-0 overflow-hidden"
         style={{
-          transform: "rotateX(22deg)",
+          transform: "rotateX(12deg)",
           transformOrigin: `center ${TILT_ORIGIN_Y}`,
           WebkitMaskImage:
             "linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)",
@@ -255,7 +257,7 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
             // `absolute` utility), so pin it absolute inline; and because
             // animating `scale` makes framer own the transform, centre it via
             // framer's x/y (the `-translate-*` classes would be ignored).
-            className="glass absolute left-1/2 top-1/2 rounded-full px-5 py-2.5 text-sm text-muted-foreground"
+            className="popover absolute left-1/2 top-1/2 flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-foreground"
             style={{ position: "absolute" }}
             initial={{ opacity: 0, scale: 0.92, x: "-50%", y: "-50%" }}
             animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
@@ -263,7 +265,8 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
             onClick={onRequestFocus}
           >
-            click here or press any key to focus
+            <MousePointerClick aria-hidden className="size-4 text-primary" />
+            click or press any key to focus
           </motion.button>
         )}
       </AnimatePresence>
