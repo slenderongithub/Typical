@@ -42,8 +42,8 @@ export function ThemeToggle({
       className={cn(
         "flex size-10 items-center justify-center rounded-full border transition-colors",
         open
-          ? "glass-chip text-foreground"
-          : "border-transparent text-muted-foreground hover:bg-glass-strong hover:text-foreground",
+          ? "glass-chip text-primary-foreground"
+          : "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground",
       )}
     >
       {open ? <X className="size-[18px]" /> : <Palette className="size-[18px]" />}
@@ -80,7 +80,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
             }}
             className={cn(
               "relative flex size-10 items-center justify-center rounded-full transition-colors",
-              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              active ? "text-surface-foreground" : "hover:bg-surface-foreground/10",
             )}
           >
             {active && (

@@ -18,7 +18,7 @@ import { ConsentModal } from "@/components/gaze/ConsentModal";
 import { GazeStatusPill } from "@/components/gaze/GazeStatusPill";
 import { GlassButton } from "@/components/glass";
 import { ResultsScreen } from "@/components/results/ResultsScreen";
-import { ConfigBar } from "@/components/test/ConfigBar";
+import { ConfigBar, RAIL_WIDTH } from "@/components/test/ConfigBar";
 import { FocusOverlay } from "@/components/test/FocusOverlay";
 import { LiveStats } from "@/components/test/LiveStats";
 import { RestartHint } from "@/components/test/RestartHint";
@@ -50,6 +50,8 @@ import { cn, uid } from "@/lib/utils";
 
 type Phase = "test" | "results";
 
+const RAIL_KEY = "nolook:rail-collapsed";
+
 /** Repeat/shuffle a small word set into a ~30-word practice passage. */
 function buildPracticeText(words: string[], seed: number): string {
   const rng = createRng(seed);
@@ -80,6 +82,7 @@ export function TestExperience() {
   // render hydrate identically — the persisted default is applied on mount
   // below. Reading the persisted store here would mismatch the SSR'd config bar.
   const [config, setConfig] = useState<TestConfig>(DEFAULT_CONFIG);
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const [seed, setSeed] = useState<number>(() => randomSeed());
   const [engine, setEngine] = useState<TypingEngine | null>(null);
   const [phase, setPhase] = useState<Phase>("test");
@@ -558,10 +561,60 @@ export function TestExperience() {
   const isZen = config.mode === "zen";
   const running = engine !== null && phase === "test";
 
+  /* ── config rail collapse (per-browser preference) ─────────────────── */
+
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(RAIL_KEY);
+    } catch {}
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read client-only preference after hydration
+    setRailCollapsed(stored ? stored === "1" : window.innerWidth < 1280);
+  }, []);
+
+  const onRailCollapsed = useCallback((v: boolean) => {
+    setRailCollapsed(v);
+    try {
+      localStorage.setItem(RAIL_KEY, v ? "1" : "0");
+    } catch {}
+  }, []);
+
   /* ── render ───────────────────────────────────────────────────────── */
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center">
+    <div
+      className={cn(
+        "mx-auto flex w-full max-w-5xl flex-1 flex-col items-center",
+        phase === "test" && "rail-offset",
+      )}
+      style={
+        {
+          "--rail-w": `${railCollapsed ? RAIL_WIDTH.collapsed : RAIL_WIDTH.expanded}px`,
+        } as React.CSSProperties
+      }
+    >
+      {/* the config rail is fixed to the viewport, so it lives outside the
+          transformed phase wrapper below (a transform would re-anchor it) */}
+      <AnimatePresence>
+        {phase === "test" && (
+          <motion.div
+            key="rail"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ConfigBar
+              config={config}
+              onChange={onConfigChange}
+              disabled={testRunning}
+              collapsed={railCollapsed}
+              onCollapsedChange={onRailCollapsed}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {phase === "test" ? (
           // keyed on the phase only: the config bar must stay mounted across
@@ -575,23 +628,17 @@ export function TestExperience() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: "spring", stiffness: 260, damping: 30 }}
           >
-            <ConfigBar
-              config={config}
-              onChange={onConfigChange}
-              disabled={testRunning}
-            />
-
-            {/* gaze controls — the verification USP, kept one quiet row */}
+            {/* gaze controls — the verification USP, right under the nav */}
             {gaze.supported && (
               <div
                 className={cn(
-                  "mt-4 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-300",
+                  "-mt-5 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-300",
                   testRunning && "pointer-events-none opacity-30",
                 )}
               >
                 <GlassButton
                   size="sm"
-                  variant="default"
+                  variant="island"
                   onClick={onGazeButton}
                   icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
                 >
@@ -611,10 +658,9 @@ export function TestExperience() {
               </div>
             )}
 
-            {/* the typing stage — sits in the upper-middle band where the eye
-                lands first (F-pattern), close under the controls it belongs to
-                rather than floated to the vertical centre of a tall viewport */}
-            <div className="flex w-full flex-col pt-[clamp(1.5rem,7vh,4.5rem)]">
+            {/* the typing stage — centred in the free height, nudged a little
+                above true centre where the eye naturally rests */}
+            <div className="flex w-full flex-1 flex-col justify-center pb-[6vh]">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={`stage-${seed}-${configKey(config)}`}

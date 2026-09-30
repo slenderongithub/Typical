@@ -28,7 +28,12 @@
 
   /* opaque elevated surface: menus, popovers, tooltips */
   --popover: #1c2144;
-  --grid-dot: rgba(255, 255, 255, 0.07);
+  --grid-dot: rgba(255, 255, 255, 0.16);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #1f2550;
+  --surface-foreground: #f7f8ff;
+  --surface-muted: #b3badf;
 
   --primary: #9dabff;
   --primary-strong: #8093ff;
@@ -65,7 +70,12 @@
   --glass-shadow: rgba(30, 38, 110, 0.18);
 
   --popover: #ffffff;
-  --grid-dot: rgba(21, 23, 31, 0.09);
+  --grid-dot: rgba(12, 14, 26, 0.2);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #ffffff;
+  --surface-foreground: #0c0e1a;
+  --surface-muted: #5a6078;
 
   --primary: #4453e6;
   --primary-strong: #3341d2;
@@ -97,7 +107,12 @@
   --glass-shadow: rgba(0, 10, 8, 0.6);
 
   --popover: #133230;
-  --grid-dot: rgba(210, 255, 240, 0.07);
+  --grid-dot: rgba(210, 255, 240, 0.15);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #15403a;
+  --surface-foreground: #f1fff9;
+  --surface-muted: #a9d3c6;
 
   --primary: #5ff2c0;
   --primary-strong: #36dca6;
@@ -129,7 +144,12 @@
   --glass-shadow: rgba(14, 4, 2, 0.6);
 
   --popover: #3a211b;
-  --grid-dot: rgba(255, 232, 218, 0.07);
+  --grid-dot: rgba(255, 232, 218, 0.15);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #4a2a22;
+  --surface-foreground: #fff6f1;
+  --surface-muted: #e0c0b3;
 
   --primary: #ffa57e;
   --primary-strong: #ff8c5a;
@@ -164,11 +184,16 @@
   --glass-shadow: rgba(20, 10, 6, 0.55);
 
   --popover: #5e4135;
-  --grid-dot: rgba(255, 240, 228, 0.08);
+  --grid-dot: rgba(255, 240, 228, 0.16);
 
-  --primary: #a9c4a5;
-  --primary-strong: #93b28e;
-  --primary-foreground: #1c2a1a;
+  /* opaque floating islands (nav, config rail) */
+  --surface: #8fa98b;
+  --surface-foreground: #1c2a1a;
+  --surface-muted: #3d5139;
+
+  --primary: #f0584a;
+  --primary-strong: #e2412c;
+  --primary-foreground: #ffffff;
   --success: #a9c4a5;
   --warning: #f2c46b;
   --danger: #ff6a58;
@@ -177,7 +202,7 @@
   --char-correct: #ffffff;
   --char-incorrect: #ff6a58;
   --char-extra: #e94b3c;
-  --caret: #ff6a58;
+  --caret: #f0584a;
   color-scheme: dark;
 }
 
@@ -196,7 +221,12 @@
   --glass-shadow: rgba(15, 42, 28, 0.16);
 
   --popover: #fbfaf2;
-  --grid-dot: rgba(15, 42, 28, 0.09);
+  --grid-dot: rgba(15, 42, 28, 0.22);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #1f7349;
+  --surface-foreground: #f6f4e8;
+  --surface-muted: #bfe0cc;
 
   --primary: #d32e5e;
   --primary-strong: #b8214e;
@@ -228,7 +258,12 @@
   --glass-shadow: rgba(10, 11, 13, 0.55);
 
   --popover: #43474d;
-  --grid-dot: rgba(236, 240, 245, 0.08);
+  --grid-dot: rgba(236, 240, 245, 0.16);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #f2d3cf;
+  --surface-foreground: #2a2c30;
+  --surface-muted: #6b5f5d;
 
   --primary: #c4ec3a;
   --primary-strong: #b0da22;
@@ -260,7 +295,12 @@
   --glass-shadow: rgba(3, 14, 24, 0.55);
 
   --popover: #1a4868;
-  --grid-dot: rgba(220, 240, 255, 0.08);
+  --grid-dot: rgba(220, 240, 255, 0.16);
+
+  /* opaque floating islands (nav, config rail) */
+  --surface: #4ca5c7;
+  --surface-foreground: #0b2638;
+  --surface-muted: #16445f;
 
   --primary: #f5904a;
   --primary-strong: #ef7b2e;
@@ -288,6 +328,9 @@
   --color-glass-border: var(--glass-border);
   --color-glass-highlight: var(--glass-highlight);
   --color-popover: var(--popover);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-surface-muted: var(--surface-muted);
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-foreground: var(--primary-foreground);
@@ -398,17 +441,33 @@ body {
     transform: scale(0.98);
   }
 
-  /* the active segment in any tab/pill group: a thick liquid-glass lens —
-     gradient body, bright top rim, neutral drop shadow (no hue glow) */
+  /* the active segment in any tab/pill group: filled with the theme accent
+     so the palette's third colour shows up everywhere a choice is made.
+     Pair with `text-primary-foreground` on the item. */
   .glass-chip {
-    background: linear-gradient(180deg, var(--glass-strong) 0%, var(--glass) 100%);
-    border: 1px solid color-mix(in oklch, var(--foreground) 22%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--primary) 86%, white) 0%,
+      var(--primary) 100%
+    );
+    border: 1px solid color-mix(in oklch, var(--primary) 70%, black);
     box-shadow:
-      inset 0 1px 0 0 var(--glass-highlight),
-      0 4px 12px -6px var(--glass-shadow),
-      0 1px 3px -1px var(--glass-shadow);
-    backdrop-filter: blur(12px) saturate(1.2);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+      0 4px 12px -5px color-mix(in oklch, black 45%, transparent),
+      0 1px 2px 0 color-mix(in oklch, black 25%, transparent);
+  }
+
+  /* an opaque island floating over the background: the nav and the test
+     config rail. Solid palette surface + a deep two-layer drop shadow. */
+  .island {
+    background-color: var(--surface);
+    color: var(--surface-foreground);
+    border: 1px solid color-mix(in oklch, var(--surface-foreground) 10%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 22%, transparent),
+      0 2px 4px -1px rgba(0, 0, 0, 0.22),
+      0 14px 28px -10px rgba(0, 0, 0, 0.38),
+      0 30px 60px -24px rgba(0, 0, 0, 0.45);
   }
 
   /* card heading — one bold, prominent size for every panel */
@@ -487,19 +546,26 @@ body {
   overflow: hidden;
   pointer-events: none;
 }
-/* faint dot grid, fading out from the top centre — gives the empty space
-   structure without competing with content */
+/* dot grid over the whole page — light dots on dark themes, dark on light */
 .bg-glow-field > .glow-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.2px);
+  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.5px);
   background-size: 24px 24px;
-  -webkit-mask-image: radial-gradient(
-    ellipse 70% 60% at 50% 0%,
-    #000 0%,
-    transparent 75%
-  );
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 75%);
+}
+
+/* ── Test config rail clearance ─────────────────────────────────────
+   Pads the test column just enough (symmetrically on md+, so text stays
+   centred) that it never slides under the fixed left rail. --rail-w is set
+   by TestExperience from the rail's collapsed state. */
+.rail-offset {
+  --rail-clear: max(0px, calc(var(--rail-w) + 1.75rem - max(1rem, (100vw - 64rem) / 2)));
+  padding-left: var(--rail-clear);
+}
+@media (min-width: 768px) {
+  .rail-offset {
+    padding-right: var(--rail-clear);
+  }
 }
 
 /* ── Typing surface ────────────────────────────────────────────────── */

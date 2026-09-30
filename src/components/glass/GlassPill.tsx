@@ -97,7 +97,7 @@ export function GlassPill({
               SIZES[size],
               fullWidth && "flex-1",
               active
-                ? "text-foreground"
+                ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

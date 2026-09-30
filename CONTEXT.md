@@ -460,6 +460,18 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - **Stage top offset** is `pt-[clamp(1.5rem,7vh,4.5rem)]`, so the text block sits near the vertical centre.
   - **Toast copy is short** ("camera access denied", "face tracking timed out", "failed: you looked away"). Raw worker errors go to the console, not the toast.
 
+- **Palette islands (theme-choices, round 9):** every theme now defines `--surface`, `--surface-foreground` and `--surface-muted`. These are opaque island colours, e.g. basil-green islands on a potting-soil background, amazon on cream, almond on pigeon, norse blue on poseidon.
+  - `.island` is the opaque surface with a deep drop shadow, used by the nav, the config rail and the camera button (`GlassButton variant="island"`).
+  - `.glass-chip` is filled with `--primary`, so active items must use `text-primary-foreground`.
+  - basil's primary is now cherry tomato.
+  - The dot grid covers the whole page with per-theme `--grid-dot`: light dots on dark themes, dark dots on light.
+- **ConfigBar is a fixed left rail:** a round collapse toggle, then island 1 (mode | amount), then island 2 (modifiers | difficulty; hidden in zen). Collapsed shows icons only, with labels animating to width 0.
+  - The collapsed state lives in TestExperience and persists in localStorage `nolook:rail-collapsed`; it defaults to collapsed under 1280px.
+  - The rail must render OUTSIDE the transformed phase `motion.div`, otherwise `fixed` re-anchors.
+  - `.rail-offset` + `--rail-w` (from `RAIL_WIDTH`) pads the test column so text never slides under the rail. The padding is symmetric on md+ so the text stays centred.
+- **AutoHeight gotcha:** the outer box is sized to its child, so any padding must go on a child div, never on AutoHeight's `className`. This clipped the leaderboard.
+- **Turbopack gotcha (again):** CSS edits can take 10–20s or more to be served. Verify with `curl` against the served chunk before trusting a screenshot.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

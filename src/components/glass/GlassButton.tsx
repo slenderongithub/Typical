@@ -14,6 +14,8 @@ const SIZES = {
 const VARIANTS = {
   default: "glass glass-interactive text-foreground",
   primary: "btn-primary border border-transparent",
+  /** opaque palette surface floating over the background */
+  island: "island transition-[filter] duration-200 hover:brightness-110",
   ghost:
     "border border-transparent bg-transparent text-muted-foreground transition-colors duration-200 hover:bg-glass-strong hover:text-foreground",
   danger:

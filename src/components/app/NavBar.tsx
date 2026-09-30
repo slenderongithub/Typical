@@ -71,12 +71,12 @@ export function NavBar() {
     >
       <nav
         ref={navRef}
-        className="glass-strong flex max-w-full items-center gap-1 rounded-full p-1.5 sm:pl-2"
+        className="island flex max-w-full items-center gap-1 rounded-full p-1.5 sm:pl-2"
       >
         <Link
           href="/"
           aria-label="Typical — home"
-          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[17px] font-bold tracking-tight text-foreground sm:pr-3"
+          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[17px] font-bold tracking-tight text-surface-foreground sm:pr-3"
         >
           <LogoMark />
           <span className="hidden sm:inline">Typical</span>
@@ -106,8 +106,8 @@ export function NavBar() {
                     className={cn(
                       "relative flex h-10 items-center rounded-full px-3 text-[15px] font-semibold transition-colors sm:px-4",
                       active
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
+                        ? "text-primary-foreground"
+                        : "text-surface-muted hover:text-surface-foreground",
                     )}
                   >
                     {active && (
@@ -126,7 +126,7 @@ export function NavBar() {
           </motion.div>
         </AnimatePresence>
 
-        <span aria-hidden className="mx-1 hidden h-6 w-px bg-glass-border sm:block" />
+        <span aria-hidden className="mx-1 hidden h-6 w-px bg-surface-foreground/15 sm:block" />
 
         <div className="flex shrink-0 items-center gap-1">
           <ThemeToggle open={themeOpen} onOpenChange={setThemeOpen} />
@@ -135,7 +135,7 @@ export function NavBar() {
               href="/settings"
               title={session?.user?.name ?? session?.user?.email ?? "account"}
               aria-label="your account"
-              className="flex size-10 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary ring-1 ring-inset ring-primary/25 transition-colors hover:bg-primary/25"
+              className="btn-primary flex size-10 items-center justify-center rounded-full text-sm font-bold"
             >
               {initial}
             </Link>

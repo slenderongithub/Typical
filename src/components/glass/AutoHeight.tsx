@@ -8,6 +8,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
  * glides instead of snapping — which also stops the page (and anything the
  * user is looking at) jumping when a list near the bottom shrinks.
  */
+/** Padding belongs on a child, not `className` — the outer box is sized to the child. */
 export function AutoHeight({ children, className }: { children: ReactNode; className?: string }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">("auto");
