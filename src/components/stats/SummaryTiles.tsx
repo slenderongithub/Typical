@@ -19,8 +19,8 @@ function Tile({
 }) {
   return (
     <div className="glass flex flex-col gap-2 rounded-2xl px-5 py-4">
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      <span className="flex h-8 items-center text-[1.625rem] font-semibold tabular-nums tracking-tight text-foreground">
+      <span className="eyebrow">{label}</span>
+      <span className="flex h-9 items-center text-[1.875rem] font-bold tabular-nums tracking-tight text-foreground">
         {children}
       </span>
     </div>
@@ -41,14 +41,14 @@ export function SummaryTiles({ summary }: SummaryTilesProps) {
       <Tile label="best wpm">
         <SmoothNumber value={Math.round(summary.bestWpm)} />
       </Tile>
-      <Tile label="average wpm">
+      <Tile label="avg wpm">
         <SmoothNumber value={Math.round(summary.avgWpm)} />
       </Tile>
-      <Tile label="average accuracy">
+      <Tile label="avg accuracy">
         <SmoothNumber value={Math.round(summary.avgAccuracy)} suffix="%" />
       </Tile>
       <Tile label="time typing">{humanizeMs(summary.totalTimeMs)}</Tile>
-      <Tile label="clean-run rate">
+      <Tile label="clean runs">
         <SmoothNumber value={Math.round(summary.cleanRate * 100)} suffix="%" />
       </Tile>
     </div>

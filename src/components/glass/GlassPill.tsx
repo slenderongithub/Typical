@@ -24,9 +24,12 @@ export interface GlassPillProps {
   fullWidth?: boolean;
 }
 
+/** Shared by every sliding tab indicator (pills + nav) so they all move alike. */
+export const PILL_SPRING = { type: "spring", stiffness: 400, damping: 30, mass: 0.8 } as const;
+
 const SIZES = {
-  sm: "h-7 px-3 text-[0.8125rem]",
-  md: "h-9 px-4 text-sm",
+  sm: "h-9 px-4 text-sm",
+  md: "h-11 px-5 text-[0.9375rem]",
 } as const;
 
 /**
@@ -71,8 +74,8 @@ export function GlassPill({
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
       className={cn(
-        "flex items-center gap-0.5 rounded-full",
-        variant === "glass" && "glass p-1",
+        "flex items-center gap-1 rounded-full",
+        variant === "glass" && "glass p-1.5",
         fullWidth && "w-full",
         className,
       )}
@@ -90,7 +93,7 @@ export function GlassPill({
             tabIndex={tabbable ? 0 : -1}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "relative flex select-none items-center justify-center gap-1.5 rounded-full font-medium transition-colors duration-200",
+              "relative flex select-none items-center justify-center gap-1.5 rounded-full font-semibold transition-colors duration-200",
               SIZES[size],
               fullWidth && "flex-1",
               active
@@ -101,12 +104,8 @@ export function GlassPill({
             {active && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-full border border-glass-border bg-glass-strong shadow-[inset_0_1px_0_0_var(--glass-highlight),0_1px_3px_-1px_var(--glass-shadow)]"
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 420, damping: 34 }
-                }
+                className="glass-chip absolute inset-0 rounded-full"
+                transition={reduceMotion ? { duration: 0 } : PILL_SPRING}
               />
             )}
             {opt.icon && (

@@ -31,9 +31,9 @@ const item = {
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="glass-subtle flex flex-col gap-1.5 rounded-2xl px-4 py-3.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="flex h-7 items-center text-[1.375rem] font-semibold tabular-nums tracking-tight text-foreground">
+    <div className="glass flex flex-col gap-2 rounded-2xl px-4 py-3.5">
+      <span className="eyebrow">{label}</span>
+      <span className="flex h-8 items-center text-[1.625rem] font-bold tabular-nums tracking-tight text-foreground">
         {value}
       </span>
     </div>
@@ -108,13 +108,11 @@ export function ResultsScreen({
         <motion.div variants={item}>
           <div className="glass flex items-center gap-5 rounded-2xl px-5 py-4">
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">
-                verified score
-              </span>
+              <span className="eyebrow">verified score</span>
               <div className="flex items-baseline gap-1.5">
                 <SmoothNumber
                   value={Math.round(vWpm)}
-                  className="text-3xl font-semibold leading-tight text-foreground"
+                  className="text-3xl font-bold leading-tight text-foreground"
                 />
                 <span className="text-sm text-muted-foreground">wpm</span>
               </div>

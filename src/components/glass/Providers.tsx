@@ -13,7 +13,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
-      themes={["midnight", "dawn", "aurora", "sunset"]}
+      themes={["midnight", "dawn", "aurora", "sunset", "basil", "cannoli", "pigeon", "poseidon"]}
       defaultTheme="midnight"
       enableSystem={false}
     >

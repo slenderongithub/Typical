@@ -28,10 +28,7 @@ export function PeekTrend({ results }: PeekTrendProps) {
 
   return (
     <div>
-      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">peek trend</h3>
-      <p className="mb-3 text-[13px] text-muted-foreground">
-        peeks per test — trending down means your eyes are staying up
-      </p>
+      <h3 className="card-title mb-4">peek trend</h3>
       {points.length < 2 ? (
         <div className="grid h-[140px] place-items-center text-sm text-muted-foreground">
           not enough tracked runs yet — enable the camera on a few tests

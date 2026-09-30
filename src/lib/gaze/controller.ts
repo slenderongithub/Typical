@@ -93,10 +93,10 @@ export class GazeController {
       const name = err instanceof DOMException ? err.name : "";
       throw new Error(
         name === "NotAllowedError"
-          ? "camera permission was denied — you can re-enable it in your browser's site settings"
+          ? "camera access denied"
           : name === "NotFoundError"
-            ? "no camera was found on this device"
-            : "the camera could not be started",
+            ? "no camera found"
+            : "camera failed to start",
       );
     }
 
@@ -115,9 +115,7 @@ export class GazeController {
     } catch (err) {
       this.stop();
       this.setStatus("error");
-      throw err instanceof Error
-        ? err
-        : new Error("the face-tracking model failed to load");
+      throw err instanceof Error ? err : new Error("face tracking failed to load");
     }
 
     this.startLoop();
@@ -273,7 +271,7 @@ export class GazeController {
       const timeout = setTimeout(() => {
         if (!settled) {
           settled = true;
-          reject(new Error("the face-tracking model timed out while loading"));
+          reject(new Error("face tracking timed out"));
         }
       }, WORKER_INIT_TIMEOUT_MS);
 
@@ -291,7 +289,9 @@ export class GazeController {
           if (!settled) {
             settled = true;
             clearTimeout(timeout);
-            reject(new Error(msg.message));
+            // raw worker/MediaPipe text is too long for a toast
+            console.error("[gaze] worker error:", msg.message);
+            reject(new Error("face tracking failed to load"));
           } else {
             this.inFlight = false;
           }
@@ -304,7 +304,7 @@ export class GazeController {
         if (!settled) {
           settled = true;
           clearTimeout(timeout);
-          reject(new Error("the gaze worker failed to start"));
+          reject(new Error("face tracking failed to start"));
         }
       };
 

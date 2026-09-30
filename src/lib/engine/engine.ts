@@ -532,8 +532,10 @@ export class TypingEngine {
       currentCharIndex: current ? current.typed.length : 0,
       elapsedMs: elapsed,
       clockSeconds: this.clockSeconds(elapsed),
-      liveWpm: wpmFromChars(this.correctChars(), elapsed),
-      liveRaw: wpmFromChars(this.keystrokes, elapsed),
+      // display-only: floor the window at 2s so the first keystroke doesn't
+      // read as thousands of wpm (1 char / a few ms)
+      liveWpm: wpmFromChars(this.correctChars(), Math.max(elapsed, 2000)),
+      liveRaw: wpmFromChars(this.keystrokes, Math.max(elapsed, 2000)),
       liveAccuracy:
         this.keystrokes === 0
           ? 100

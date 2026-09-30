@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CircleAlert, Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
+import { Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -33,6 +33,7 @@ import {
   touchStreak,
 } from "@/lib/storage/local";
 import { useSettings } from "@/lib/store/settings";
+import { toast, useToasts } from "@/lib/store/toast";
 import { useUi } from "@/lib/store/ui";
 import { generateWords } from "@/lib/text/generator";
 import {
@@ -89,7 +90,6 @@ export function TestExperience() {
   }>({ isNewBest: false });
   const [overlay, setOverlay] = useState<"blur" | "peek" | null>(null);
   const [streamFocused, setStreamFocused] = useState(true);
-  const [failedNotice, setFailedNotice] = useState<string | null>(null);
 
   const [consentOpen, setConsentOpen] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
@@ -157,12 +157,12 @@ export function TestExperience() {
       }
       if (r.reason === "failed") {
         endGazeSession();
-        setFailedNotice(
+        toast(
           failCauseRef.current === "lookaway"
-            ? "test failed — master allows no looking away from the screen"
+            ? "failed: you looked away"
             : cfg.difficulty === "master"
-              ? "test failed — master allows no mistakes"
-              : "test failed — expert allows no errored words",
+              ? "failed: no mistakes in master"
+              : "failed: no wrong words in expert",
         );
         setFailedRestartTick((t) => t + 1);
         return;
@@ -258,7 +258,7 @@ export function TestExperience() {
         if (!started && snap.status === "running") {
           started = true;
           setTestRunning(true);
-          setFailedNotice(null);
+          useToasts.getState().clear();
           const g = useGazeStore.getState();
           if (g.cameraOn && g.calibrated) {
             try {
@@ -500,16 +500,13 @@ export function TestExperience() {
       }
       await controller.start(video);
       const g = useGazeStore.getState();
-      g.setError(undefined);
       g.setCameraOn(true);
       g.setStatus(controller.getStatus());
       if (!g.calibrated) setCalibrating(true);
     } catch (err) {
       const g = useGazeStore.getState();
       g.setStatus("error");
-      g.setError(
-        err instanceof Error ? err.message : "the camera could not be started",
-      );
+      toast(err instanceof Error ? err.message : "camera failed to start");
     }
   }, []);
 
@@ -594,7 +591,7 @@ export function TestExperience() {
               >
                 <GlassButton
                   size="sm"
-                  variant={gaze.cameraOn ? "default" : "ghost"}
+                  variant="default"
                   onClick={onGazeButton}
                   icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
                 >
@@ -614,22 +611,10 @@ export function TestExperience() {
               </div>
             )}
 
-            <AnimatePresence>
-              {gaze.error && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-3 max-w-md text-center text-xs text-danger"
-                  role="alert"
-                >
-                  {gaze.error}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            {/* the typing stage — centred in the remaining height */}
-            <div className="flex w-full flex-1 flex-col justify-center py-10 sm:py-14">
+            {/* the typing stage — sits in the upper-middle band where the eye
+                lands first (F-pattern), close under the controls it belongs to
+                rather than floated to the vertical centre of a tall viewport */}
+            <div className="flex w-full flex-col pt-[clamp(1.5rem,7vh,4.5rem)]">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={`stage-${seed}-${configKey(config)}`}
@@ -640,7 +625,7 @@ export function TestExperience() {
                   transition={{ type: "spring", stiffness: 300, damping: 32 }}
                 >
                   {engine && (
-                    <div className="mb-3 flex h-9 items-end justify-center">
+                    <div className="mb-2 flex h-9 items-end justify-center">
                       <LiveStats engine={engine} />
                     </div>
                   )}
@@ -654,26 +639,9 @@ export function TestExperience() {
                   <FocusOverlay kind={overlay} onResume={resumeFromOverlay} />
                 </motion.div>
               </AnimatePresence>
-
-              <div className="mt-6 flex h-6 items-center justify-center">
-                <AnimatePresence>
-                  {failedNotice && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      role="alert"
-                      className="flex items-center gap-2 rounded-full border border-danger/25 bg-danger/10 px-3.5 py-1 text-[13px] text-danger"
-                    >
-                      <CircleAlert aria-hidden className="size-3.5" />
-                      {failedNotice}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
             </div>
 
-            <div className="flex flex-col items-center gap-4">
+            <div className="mt-4 flex flex-col items-center gap-4">
               {isZen && running && (
                 <GlassButton
                   size="sm"

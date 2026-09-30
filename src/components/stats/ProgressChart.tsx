@@ -49,12 +49,9 @@ export function ProgressChart({ results }: ProgressChartProps) {
 
   return (
     <div>
-      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">
+      <h3 className="card-title mb-4">
         wpm over time
       </h3>
-      <p className="mb-3 text-[13px] text-muted-foreground">
-        every run, oldest to newest — day-averaged past 120 runs
-      </p>
       <TrendChart points={points} valueLabel="wpm" height={190} />
     </div>
   );

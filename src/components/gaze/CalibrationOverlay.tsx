@@ -105,7 +105,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
       >
-        <h2 className="text-xl font-semibold text-foreground">
+        <h2 className="text-2xl font-bold text-foreground">
           {COPY[step].title}
         </h2>
         <p className="max-w-sm text-sm text-muted-foreground">

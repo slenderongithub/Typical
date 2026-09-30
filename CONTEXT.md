@@ -438,6 +438,28 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   so settings don't sync to accounts. The stats page reads only local
   IndexedDB, so a signed-in user on a new device sees no server history.
 
+## Recent fixes — round 8 (2026-10-01): themes, tabs, logo, toasts
+
+- **Themes rebuilt for contrast** (globals.css): backgrounds lifted off black (midnight `#10132a`, aurora `#0a1e1c`, sunset `#22120e`), near-white foregrounds, much more legible `--char-pending`, stronger glass alpha/borders/shadows. `THEMES` swatches in ThemeToggle.tsx mirror these — keep in sync.
+- **New shared classes**: `.glass-chip` (the active segment in ANY tab/pill group — tinted liquid-glass lens) and `.card-title` (the one bold panel heading). `PILL_SPRING` (GlassPill.tsx) is the shared spring for every sliding indicator.
+- **Tabs bigger**: GlassPill sm = h-9/14px, md = h-11; nav links h-10/15px semibold.
+- **Theme picker**: no dropdown. The palette button swaps the nav's link row for a centred row of theme swatches in place (`ThemeSwatches`); NavBar owns the open state.
+- **Logo**: user-supplied PNG → `src/app/icon.png`, `apple-icon.png`, `public/logo.png` (`LogoMark` in NavBar, reused in AuthPanel). `icon.svg` removed.
+- **Browser title** is always "Typical" (no per-page metadata titles).
+- **Page subheaders removed**: `PageHeader` has no description; stats card subtitles and settings section blurbs removed.
+- **Toasts**: `src/lib/store/toast.ts` (`toast(msg)`) + `Toaster` in layout (top-right). Camera start errors and expert/master fail notices use it; the inline error/notice rows under the test are gone.
+- **Zen caret**: with no words yet, WordStream parks the caret at the centre of line 0 (where the first character lands); the hint text renders on the line below.
+- **Test layout**: the typing stage is no longer `flex-1 justify-center` (that floated it low with a big gap under "verify with camera"). It now sits right under the controls. ConfigBar is `w-max` so it can be wider than the max-w-5xl column and stay on one row.
+- **History/leaderboard jank**: `AutoHeight` (glass/) springs content height, so filter swaps don't snap the page or clamp scroll. History rows crossfade per filter. ConfigBar's mode sub-row uses `popLayout` (was `wait`, which resized the bar twice).
+- **Live WPM** is floored to a 2s window. The first keystroke used to read ~6,000 wpm. This is display-only; results are unaffected.
+- Streak icon is lucide `Rabbit`.
+
+- **Branch `theme-choices` (same day, follow-up):** added four palette themes: `basil` (basil, potting soil, cherry tomato), `cannoli` (cannoli cream, amazon, raspberry; light), `pigeon` (pigeon, almond blossom, acid lime) and `poseidon` (poseidon, norse blue, pureed pumpkin). They're registered in Providers.tsx `themes` and in `THEMES`. The nav swatch row is dots-only now (8 themes).
+  - **All hue effects removed:** no drifting glow blobs or cursor orb (`BackgroundGlow` is just the dot grid, `--glow-*` tokens are gone). `.glass-chip` is neutral glass with no primary tint. `btn-primary`, the caret, logo and streak have no coloured glows.
+  - **ConfigBar is two stacked pills:** row 1 is mode | amount, row 2 is punctuation/numbers | difficulty. Row 2 isn't rendered in zen.
+  - **Stage top offset** is `pt-[clamp(1.5rem,7vh,4.5rem)]`, so the text block sits near the vertical centre.
+  - **Toast copy is short** ("camera access denied", "face tracking timed out", "failed: you looked away"). Raw worker errors go to the console, not the toast.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

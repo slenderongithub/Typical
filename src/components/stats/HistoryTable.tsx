@@ -4,7 +4,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { GlassButton, GlassDot, GlassPill } from "@/components/glass";
+import {
+  AutoHeight,
+  GlassButton,
+  GlassDot,
+  GlassPill,
+} from "@/components/glass";
 import type {
   IntegrityStatus,
   SavedResult,
@@ -30,11 +35,12 @@ const INTEGRITY_FILTERS = [
   { value: "untracked", label: "untracked" },
 ];
 
-const INTEGRITY_TONE: Record<IntegrityStatus, "success" | "warning" | "faint"> = {
-  clean: "success",
-  assisted: "warning",
-  untracked: "faint",
-};
+const INTEGRITY_TONE: Record<IntegrityStatus, "success" | "warning" | "faint"> =
+  {
+    clean: "success",
+    assisted: "warning",
+    untracked: "faint",
+  };
 
 function relativeTime(ts: number): string {
   const d = Date.now() - ts;
@@ -91,7 +97,8 @@ export function HistoryTable({ results }: HistoryTableProps) {
       results.filter(
         (r) =>
           (mode === "all" || r.mode === (mode as TestMode)) &&
-          (integrity === "all" || r.integrity === (integrity as IntegrityStatus)),
+          (integrity === "all" ||
+            r.integrity === (integrity as IntegrityStatus)),
       ),
     [results, mode, integrity],
   );
@@ -106,11 +113,12 @@ export function HistoryTable({ results }: HistoryTableProps) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <h3 className="mr-auto text-[15px] font-semibold tracking-tight text-foreground">history</h3>
+        <h3 className="card-title mr-auto">history</h3>
         <GlassPill
           size="sm"
           ariaLabel="filter by mode"
-          className="max-w-full overflow-x-auto"
+          variant="flat"
+          className="glass-subtle max-w-full overflow-x-auto p-1"
           options={MODE_FILTERS}
           value={mode}
           onChange={(v) => {
@@ -121,7 +129,8 @@ export function HistoryTable({ results }: HistoryTableProps) {
         <GlassPill
           size="sm"
           ariaLabel="filter by integrity"
-          className="max-w-full overflow-x-auto"
+          variant="flat"
+          className="glass-subtle max-w-full overflow-x-auto p-1"
           options={INTEGRITY_FILTERS}
           value={integrity}
           onChange={(v) => {
@@ -131,38 +140,47 @@ export function HistoryTable({ results }: HistoryTableProps) {
         />
       </div>
 
-      {items.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          no runs match these filters
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                <th className="pb-2 pl-3 font-medium">when</th>
-                <th className="pb-2 font-medium">mode</th>
-                <th className="pb-2 text-right font-medium">wpm</th>
-                <th className="pb-2 text-right font-medium">acc</th>
-                <th className="pb-2 text-right font-medium">cons</th>
-                <th className="pb-2 pl-6 font-medium">integrity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((r) => (
-                <HistoryRow
-                  key={r.id}
-                  result={r}
-                  expanded={expanded === r.id}
-                  onToggle={() =>
-                    setExpanded((e) => (e === r.id ? null : r.id))
-                  }
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <AutoHeight>
+        <motion.div
+          key={`${mode}-${integrity}-${clampedPage}`}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        >
+          {items.length === 0 ? (
+            <p className="py-10 text-center text-sm font-medium text-muted-foreground">
+              no runs match these filters
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <th className="pb-2 pl-3 font-medium">when</th>
+                    <th className="pb-2 font-medium">mode</th>
+                    <th className="pb-2 text-right font-medium">wpm</th>
+                    <th className="pb-2 text-right font-medium">acc</th>
+                    <th className="pb-2 text-right font-medium">cons</th>
+                    <th className="pb-2 pl-6 font-medium">integrity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((r) => (
+                    <HistoryRow
+                      key={r.id}
+                      result={r}
+                      expanded={expanded === r.id}
+                      onToggle={() =>
+                        setExpanded((e) => (e === r.id ? null : r.id))
+                      }
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </motion.div>
+      </AutoHeight>
 
       {pages > 1 && (
         <div className="mt-4 flex items-center justify-center gap-3">
@@ -254,7 +272,10 @@ function HistoryRow({
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-3 text-xs text-muted-foreground">
                   <Sparkline timeline={r.timeline} />
                   <span>
-                    raw <span className="text-foreground">{Math.round(r.rawWpm)}</span>
+                    raw{" "}
+                    <span className="text-foreground">
+                      {Math.round(r.rawWpm)}
+                    </span>
                   </span>
                   <span>
                     chars{" "}

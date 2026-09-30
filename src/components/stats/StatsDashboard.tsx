@@ -77,7 +77,7 @@ export function StatsDashboard() {
           <Keyboard className="size-5" />
         </span>
         <div>
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="card-title">
             no runs yet
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">

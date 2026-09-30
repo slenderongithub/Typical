@@ -112,12 +112,9 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+          <h3 className="card-title">
             per-key accuracy
           </h3>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            redder keys are the ones your fingers miss most
-          </p>
         </div>
         {/* live readout — never overlaps the keys, always legible */}
         <div className="flex h-9 items-center">

@@ -86,6 +86,7 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const wordEls = useRef(new Map<number, HTMLSpanElement>());
+  const placeholderRef = useRef<HTMLSpanElement>(null);
 
   const scrollRaw = useMotionValue(0);
   const scrollY = useSpring(scrollRaw, SCROLL_SPRING);
@@ -112,7 +113,24 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
     lineHeightPx.current = LINE_HEIGHT_REM * rootFont;
 
     const wordEl = wordEls.current.get(snapshot.currentWordIndex);
-    if (!wordEl) return;
+    if (!wordEl) {
+      // Nothing typed yet (zen): no word element exists, so park the caret at
+      // the centre of the first line — exactly where the first typed
+      // character will appear (the last line is text-align-last: centred).
+      const inner = innerRef.current;
+      const ph = placeholderRef.current;
+      if (!inner) return;
+      const fs = parseFloat(getComputedStyle(inner).fontSize) || 24;
+      const y0 = (ph?.offsetTop ?? 0) + (lineHeightPx.current - fs * 1.35) / 2;
+      const x0 = inner.clientWidth / 2;
+      caretX.jump(x0);
+      caretY.jump(y0);
+      caretXRaw.set(x0);
+      caretYRaw.set(y0);
+      scrollY.jump(0);
+      scrollRaw.set(0);
+      return;
+    }
 
     const charIdx = snapshot.currentCharIndex;
     const charSpans = wordEl.children;
@@ -223,10 +241,15 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
           style={{ y: scrollY, textAlign: "justify", textAlignLast: "center" }}
         >
           {empty ? (
-            <span className="typing-char" data-state="pending">
-              {engine.config.mode === "zen"
-                ? "type anything — zen mode just listens…"
-                : ""}
+            // hint sits on the line BELOW the caret, so the caret starts at
+            // the centre of an empty first line instead of inside the hint
+            <span ref={placeholderRef} className="block">
+              <span className="block">&nbsp;</span>
+              <span className="typing-char block text-center" data-state="pending">
+                {engine.config.mode === "zen"
+                  ? "type anything — zen mode just listens…"
+                  : ""}
+              </span>
             </span>
           ) : (
             words.map((w, i) => (

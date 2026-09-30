@@ -1,12 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChartSpline, Keyboard, Settings2, Trophy } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-import { ThemeToggle } from "@/components/glass";
+import { PILL_SPRING, ThemeSwatches, ThemeToggle } from "@/components/glass";
 import { useUi } from "@/lib/store/ui";
 import { cn } from "@/lib/utils";
 
@@ -17,15 +18,16 @@ const LINKS = [
   { href: "/settings", label: "settings", icon: Settings2 },
 ] as const;
 
-/** The Typical mark: an accent tile holding a text caret. */
-function LogoMark() {
+/** The Typical mark. */
+export function LogoMark({ className }: { className?: string }) {
   return (
-    <span
+    // eslint-disable-next-line @next/next/no-img-element -- tiny static asset, no optimisation needed
+    <img
+      src="/logo.png"
+      alt=""
       aria-hidden
-      className="btn-primary flex size-6 items-center justify-center rounded-[0.45rem]"
-    >
-      <span className="h-3 w-[2.5px] rounded-full bg-primary-foreground" />
-    </span>
+      className={cn("size-8 shrink-0", className)}
+    />
   );
 }
 
@@ -34,6 +36,27 @@ export function NavBar() {
   const pathname = usePathname();
   const testRunning = useUi((s) => s.testRunning);
   const { data: session, status } = useSession();
+  const [themeOpen, setThemeOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  // close the theme row on outside click / Escape / navigation
+  useEffect(() => {
+    if (!themeOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!navRef.current?.contains(e.target as Node)) setThemeOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setThemeOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [themeOpen]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- close on route change
+  useEffect(() => setThemeOpen(false), [pathname]);
 
   const initial = (session?.user?.name ?? session?.user?.email ?? "?")
     .slice(0, 1)
@@ -46,64 +69,80 @@ export function NavBar() {
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ pointerEvents: testRunning ? "none" : "auto" }}
     >
-      <nav className="glass flex max-w-full items-center gap-1 rounded-full p-1.5 sm:pl-3">
+      <nav
+        ref={navRef}
+        className="glass-strong flex max-w-full items-center gap-1 rounded-full p-1.5 sm:pl-2"
+      >
         <Link
           href="/"
           aria-label="Typical — home"
-          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-2 text-[15px] font-semibold tracking-tight text-foreground sm:pl-0 sm:pr-3"
+          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[17px] font-bold tracking-tight text-foreground sm:pr-3"
         >
           <LogoMark />
           <span className="hidden sm:inline">Typical</span>
         </Link>
 
-        <div className="flex min-w-0 items-center">
-          {LINKS.map((l) => {
-            const active =
-              l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={active ? "page" : undefined}
-                aria-label={l.label}
-                className={cn(
-                  "relative flex h-8 items-center rounded-full px-2.5 text-sm font-medium transition-colors sm:px-3.5",
-                  active
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="nav-active"
-                    className="absolute inset-0 rounded-full border border-glass-border bg-glass-strong shadow-[inset_0_1px_0_0_var(--glass-highlight)]"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  />
-                )}
-                <l.icon aria-hidden className="relative size-4 sm:hidden" />
-                <span className="relative hidden sm:inline">{l.label}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={themeOpen ? "themes" : "links"}
+            className="flex min-w-0 items-center gap-1"
+            initial={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {themeOpen ? (
+              <ThemeSwatches onPicked={() => setThemeOpen(false)} />
+            ) : (
+              LINKS.map((l) => {
+                const active =
+                  l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    aria-current={active ? "page" : undefined}
+                    aria-label={l.label}
+                    className={cn(
+                      "relative flex h-10 items-center rounded-full px-3 text-[15px] font-semibold transition-colors sm:px-4",
+                      active
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active"
+                        className="glass-chip absolute inset-0 rounded-full"
+                        transition={PILL_SPRING}
+                      />
+                    )}
+                    <l.icon aria-hidden className="relative size-[18px] sm:hidden" />
+                    <span className="relative hidden sm:inline">{l.label}</span>
+                  </Link>
+                );
+              })
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-        <span aria-hidden className="mx-1 hidden h-5 w-px bg-glass-border sm:block" />
+        <span aria-hidden className="mx-1 hidden h-6 w-px bg-glass-border sm:block" />
 
         <div className="flex shrink-0 items-center gap-1">
-          <ThemeToggle />
+          <ThemeToggle open={themeOpen} onOpenChange={setThemeOpen} />
           {status === "authenticated" ? (
             <Link
               href="/settings"
               title={session?.user?.name ?? session?.user?.email ?? "account"}
               aria-label="your account"
-              className="flex size-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary ring-1 ring-inset ring-primary/25 transition-colors hover:bg-primary/25"
+              className="flex size-10 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary ring-1 ring-inset ring-primary/25 transition-colors hover:bg-primary/25"
             >
               {initial}
             </Link>
           ) : (
             <Link
               href="/login"
-              className="flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-glass-strong sm:text-sm"
+              className="btn-primary flex h-10 items-center rounded-full px-4 text-sm font-semibold"
             >
               sign in
             </Link>

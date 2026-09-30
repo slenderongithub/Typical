@@ -1,8 +1,4 @@
-import type { Metadata } from "next";
-
 import { AuthPanel } from "@/components/account/AuthPanel";
-
-export const metadata: Metadata = { title: "sign in" };
 
 export default function LoginPage() {
   return (

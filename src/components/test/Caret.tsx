@@ -30,7 +30,7 @@ export function Caret({ x, y, visible, activityKey }: CaretProps) {
   return (
     <motion.div
       aria-hidden
-      className="absolute left-0 top-0 h-[1.35em] w-[2px] rounded-full bg-caret shadow-[0_0_12px] shadow-caret/60"
+      className="absolute left-0 top-0 h-[1.35em] w-[2px] rounded-full bg-caret"
       style={{ x, y }}
       animate={
         visible

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { LogoMark } from "@/components/app/NavBar";
 import { GlassButton, GlassPill } from "@/components/glass";
 
 type Tab = "signin" | "register";
@@ -103,21 +104,11 @@ export function AuthPanel() {
 
   return (
     <div className="glass-strong rounded-[1.75rem] p-7 sm:p-8">
-      <span
-        aria-hidden
-        className="btn-primary mb-5 flex size-10 items-center justify-center rounded-xl"
-      >
-        <span className="h-4.5 w-[3px] rounded-full bg-primary-foreground" />
-      </span>
-      <h1 className="text-[1.375rem] font-semibold tracking-tight text-foreground">
+      <LogoMark className="mb-5 size-12" />
+      <h1 className="text-[1.75rem] font-bold tracking-tight text-foreground">
         {tab === "signin" ? "welcome back" : "create your account"}
       </h1>
-      <p className="mb-6 mt-1.5 text-sm leading-relaxed text-muted-foreground">
-        sync your history and enter the leaderboards — or keep practicing as a
-        guest, everything works either way
-      </p>
-
-      <div className="mb-6">
+      <div className="mb-6 mt-6">
         <GlassPill
           fullWidth
           ariaLabel="sign in or create account"

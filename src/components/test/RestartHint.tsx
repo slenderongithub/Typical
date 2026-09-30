@@ -6,7 +6,7 @@ import { useSettings } from "@/lib/store/settings";
 export function RestartHint() {
   const quickRestart = useSettings((s) => s.quickRestart);
   return (
-    <p className="flex items-center gap-1.5 text-xs text-faint-foreground">
+    <p className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
       <kbd className="kbd">tab</kbd>
       {!quickRestart && (
         <>

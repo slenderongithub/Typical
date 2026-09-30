@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
 import { NavBar } from "@/components/app/NavBar";
+import { Toaster } from "@/components/app/Toaster";
 import { BackgroundGlow, Providers } from "@/components/glass";
 
 const geistSans = Geist({
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Typical — typing, verified", template: "%s · Typical" },
+  title: "Typical",
   description:
     "A touch-typing speed test that verifies you never looked down at the keyboard.",
 };
@@ -37,7 +38,8 @@ export default function RootLayout({
           <SessionProvider>
             <BackgroundGlow />
             <NavBar />
-            <main className="flex flex-1 flex-col px-4 pb-16 pt-28">
+            <Toaster />
+            <main className="flex flex-1 flex-col px-4 pb-12 pt-28">
               {children}
             </main>
           </SessionProvider>

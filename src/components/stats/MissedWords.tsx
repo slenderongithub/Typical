@@ -14,12 +14,9 @@ export function MissedWords({ words, onPractice }: MissedWordsProps) {
   const top = words.slice(0, 12);
   return (
     <div className="flex h-full flex-col">
-      <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">
+      <h3 className="card-title mb-4">
         most-missed words
       </h3>
-      <p className="mb-4 text-[13px] text-muted-foreground">
-        committed with at least one error
-      </p>
       {top.length === 0 ? (
         <div className="grid flex-1 place-items-center py-6 text-sm text-muted-foreground">
           nothing yet — nice and clean

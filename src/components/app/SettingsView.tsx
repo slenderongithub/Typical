@@ -29,7 +29,7 @@ function Row({
   return (
     <div className="flex items-center justify-between gap-6 py-3.5">
       <div className="min-w-0">
-        <div className="text-sm font-medium text-foreground">{label}</div>
+        <div className="text-[15px] font-semibold text-foreground">{label}</div>
         {hint && (
           <div className="mt-0.5 text-[13px] text-muted-foreground">{hint}</div>
         )}
@@ -79,21 +79,14 @@ function Switch({
 
 function Section({
   title,
-  description,
   children,
 }: {
   title: string;
-  description?: string;
   children: React.ReactNode;
 }) {
   return (
     <GlassPanel pad="md" className="w-full">
-      <h2 className="eyebrow">{title}</h2>
-      {description && (
-        <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
-          {description}
-        </p>
-      )}
+      <h2 className="card-title">{title}</h2>
       <div className="mt-2 divide-y divide-glass-border">{children}</div>
     </GlassPanel>
   );
@@ -186,7 +179,7 @@ export function SettingsView() {
               <span className="flex items-center justify-between px-1 pb-0.5">
                 <span
                   className={cn(
-                    "text-[13px] font-medium",
+                    "text-sm font-semibold",
                     active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
@@ -227,11 +220,7 @@ export function SettingsView() {
       </Row>
     </Section>,
 
-    <Section
-      key="gaze"
-      title="gaze & privacy"
-      description="Gaze verification reads head pose and eye state from your webcam, entirely inside your browser. No video is ever recorded or uploaded — only a few numbers, used for a moment and thrown away."
-    >
+    <Section key="gaze" title="gaze & privacy">
       <Row label="pause on peek" hint="freeze the test while you're looking down">
         <Switch
           label="pause on peek"

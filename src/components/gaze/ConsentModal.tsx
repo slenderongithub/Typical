@@ -61,7 +61,7 @@ export function ConsentModal({ open, onAccept, onDecline }: ConsentModalProps) {
             <span className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary">
               <ScanFace className="size-5" />
             </span>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
               verify your runs with the camera
             </h2>
             <p className="mb-6 mt-1.5 text-sm text-muted-foreground">
