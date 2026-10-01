@@ -40,13 +40,13 @@ export function ThemeToggle({
       aria-expanded={open}
       onClick={() => onOpenChange(!open)}
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border transition-colors",
+        "flex size-12 items-center justify-center rounded-full border transition-colors",
         open
           ? "glass-chip text-primary-foreground"
           : "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground",
       )}
     >
-      {open ? <X className="size-[18px]" /> : <Palette className="size-[18px]" />}
+      {open ? <X className="size-[22px]" /> : <Palette className="size-[22px]" />}
     </button>
   );
 }
@@ -79,7 +79,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
               if (!active) startThemeTransition(() => setTheme(t.name));
             }}
             className={cn(
-              "relative flex size-10 items-center justify-center rounded-full transition-colors",
+              "relative flex size-12 items-center justify-center rounded-full transition-colors",
               active ? "text-surface-foreground" : "hover:bg-surface-foreground/10",
             )}
           >
@@ -92,7 +92,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
             )}
             <span
               aria-hidden
-              className="relative flex size-6 items-center justify-center rounded-full shadow-[0_0_0_1.5px_rgba(255,255,255,0.35),0_2px_6px_-1px_rgba(0,0,0,0.5)]"
+              className="relative flex size-7 items-center justify-center rounded-full shadow-[0_0_0_1.5px_rgba(255,255,255,0.35),0_2px_6px_-1px_rgba(0,0,0,0.5)]"
               style={{ backgroundColor: t.bg }}
             >
               <span className="size-2.5 rounded-full" style={{ backgroundColor: t.swatch }} />

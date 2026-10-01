@@ -4,13 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CalibrationOverlay } from "@/components/gaze/CalibrationOverlay";
 import { CameraDock } from "@/components/gaze/CameraDock";
@@ -18,7 +12,7 @@ import { ConsentModal } from "@/components/gaze/ConsentModal";
 import { GazeStatusPill } from "@/components/gaze/GazeStatusPill";
 import { GlassButton } from "@/components/glass";
 import { ResultsScreen } from "@/components/results/ResultsScreen";
-import { ConfigBar, RAIL_WIDTH } from "@/components/test/ConfigBar";
+import { ConfigBar } from "@/components/test/ConfigBar";
 import { FocusOverlay } from "@/components/test/FocusOverlay";
 import { LiveStats } from "@/components/test/LiveStats";
 import { RestartHint } from "@/components/test/RestartHint";
@@ -336,10 +330,7 @@ export function TestExperience() {
 
   const restart = useCallback(
     (sameSeed = false) => {
-      buildEngine(
-        configRef.current,
-        sameSeed ? seedRef.current : randomSeed(),
-      );
+      buildEngine(configRef.current, sameSeed ? seedRef.current : randomSeed());
     },
     [buildEngine],
   );
@@ -579,169 +570,169 @@ export function TestExperience() {
     } catch {}
   }, []);
 
+  // written straight to the DOM (no re-render) — it changes every frame
+  // while the rail animates
+  const columnRef = useRef<HTMLDivElement>(null);
+  const onRailRightEdge = useCallback((px: number) => {
+    columnRef.current?.style.setProperty("--rail-right", `${px}px`);
+  }, []);
+
   /* ── render ───────────────────────────────────────────────────────── */
 
   return (
-    <div
-      className={cn(
-        "mx-auto flex w-full max-w-5xl flex-1 flex-col items-center",
-        phase === "test" && "rail-offset",
-      )}
-      style={
-        {
-          "--rail-w": `${railCollapsed ? RAIL_WIDTH.collapsed : RAIL_WIDTH.expanded}px`,
-        } as React.CSSProperties
-      }
-    >
-      {/* the config rail is fixed to the viewport, so it lives outside the
+    <div ref={columnRef} className="rail-aware flex w-full flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center">
+        {/* the config rail is fixed to the viewport, so it lives outside the
           transformed phase wrapper below (a transform would re-anchor it) */}
-      <AnimatePresence>
-        {phase === "test" && (
-          <motion.div
-            key="rail"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <ConfigBar
-              config={config}
-              onChange={onConfigChange}
-              disabled={testRunning}
-              collapsed={railCollapsed}
-              onCollapsedChange={onRailCollapsed}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
-        {phase === "test" ? (
-          // keyed on the phase only: the config bar must stay mounted across
-          // config changes (re-keying remounted it, wiping its custom-text
-          // modal state), so only the word stage below re-keys per run
-          <motion.div
-            key="test"
-            className="flex w-full flex-1 flex-col items-center"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ type: "spring", stiffness: 260, damping: 30 }}
-          >
-            {/* gaze controls — the verification USP, right under the nav */}
-            {gaze.supported && (
-              <div
-                className={cn(
-                  "-mt-5 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-300",
-                  testRunning && "pointer-events-none opacity-30",
-                )}
-              >
-                <GlassButton
-                  size="sm"
-                  variant="island"
-                  onClick={onGazeButton}
-                  icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
-                >
-                  {gaze.cameraOn ? "turn camera off" : "verify with camera"}
-                </GlassButton>
-                {gaze.cameraOn && !gaze.calibrated && (
-                  <GlassButton
-                    size="sm"
-                    variant="primary"
-                    icon={<Crosshair />}
-                    onClick={() => setCalibrating(true)}
-                  >
-                    calibrate
-                  </GlassButton>
-                )}
-                {gaze.cameraOn && <GazeStatusPill />}
-              </div>
-            )}
-
-            {/* the typing stage — centred in the free height, nudged a little
-                above true centre where the eye naturally rests */}
-            <div className="flex w-full flex-1 flex-col justify-center pb-[6vh]">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={`stage-${seed}-${configKey(config)}`}
-                  className="relative w-full"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 32 }}
-                >
-                  {engine && (
-                    <div className="mb-2 flex h-9 items-end justify-center">
-                      <LiveStats engine={engine} />
-                    </div>
-                  )}
-                  {engine && (
-                    <WordStream
-                      engine={engine}
-                      focused={streamFocused}
-                      onRequestFocus={() => setStreamFocused(true)}
-                    />
-                  )}
-                  <FocusOverlay kind={overlay} onResume={resumeFromOverlay} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="mt-4 flex flex-col items-center gap-4">
-              {isZen && running && (
-                <GlassButton
-                  size="sm"
-                  variant="default"
-                  icon={<Square />}
-                  onClick={() => engineRef.current?.finish("completed")}
-                >
-                  end zen session
-                </GlassButton>
-              )}
-              <RestartHint />
-            </div>
-          </motion.div>
-        ) : (
-          saved && (
+        <AnimatePresence>
+          {phase === "test" && (
             <motion.div
-              key={`results-${saved.id}`}
-              className="w-full"
-              initial={{ opacity: 0, y: 16 }}
+              key="rail"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ConfigBar
+                config={config}
+                onChange={onConfigChange}
+                disabled={testRunning}
+                collapsed={railCollapsed}
+                onCollapsedChange={onRailCollapsed}
+                onRightEdge={onRailRightEdge}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {phase === "test" ? (
+            // keyed on the phase only: the config bar must stay mounted across
+            // config changes (re-keying remounted it, wiping its custom-text
+            // modal state), so only the word stage below re-keys per run
+            <motion.div
+              key="test"
+              className="flex w-full flex-1 flex-col items-center"
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ type: "spring", stiffness: 260, damping: 30 }}
             >
-              <ResultsScreen
-                result={saved}
-                pb={pbInfo}
-                onRestart={() => restart(false)}
-                onRepeat={() => restart(true)}
-                onPracticeMissed={practiceMissed}
-              />
-            </motion.div>
-          )
-        )}
-      </AnimatePresence>
+              {/* gaze controls — the verification USP, right under the nav */}
+              {gaze.supported && (
+                <div
+                  className={cn(
+                    "rail-counter -mt-6 flex flex-wrap items-center justify-center gap-2",
+                    testRunning && "pointer-events-none opacity-30",
+                  )}
+                >
+                  <GlassButton
+                    size="sm"
+                    variant="island"
+                    onClick={onGazeButton}
+                    icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
+                  >
+                    {gaze.cameraOn ? "turn camera off" : "verify with camera"}
+                  </GlassButton>
+                  {gaze.cameraOn && !gaze.calibrated && (
+                    <GlassButton
+                      size="sm"
+                      variant="primary"
+                      icon={<Crosshair />}
+                      onClick={() => setCalibrating(true)}
+                    >
+                      calibrate
+                    </GlassButton>
+                  )}
+                  {gaze.cameraOn && <GazeStatusPill />}
+                </div>
+              )}
 
-      {/* gaze surfaces */}
-      <ConsentModal
-        open={consentOpen}
-        onAccept={() => {
-          useGazeStore.getState().setConsented(true);
-          setConsentOpen(false);
-          void startCamera();
-        }}
-        onDecline={() => setConsentOpen(false)}
-      />
-      <AnimatePresence>
-        {calibrating && (
-          <CalibrationOverlay
-            onDone={onCalibrated}
-            onCancel={() => setCalibrating(false)}
-          />
-        )}
-      </AnimatePresence>
-      {gaze.cameraOn && settings.showCameraPreview && <CameraDock />}
+              {/* the typing stage — centred in the free height, nudged a little
+                above true centre where the eye naturally rests */}
+              <div className="flex w-full flex-1 flex-col justify-center pb-[6vh]">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`stage-${seed}-${configKey(config)}`}
+                    className="relative w-full"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 32 }}
+                  >
+                    {engine && (
+                      <div className="mb-2 flex h-9 items-end justify-center">
+                        <LiveStats engine={engine} />
+                      </div>
+                    )}
+                    {engine && (
+                      <WordStream
+                        engine={engine}
+                        focused={streamFocused}
+                        onRequestFocus={() => setStreamFocused(true)}
+                      />
+                    )}
+                    <FocusOverlay kind={overlay} onResume={resumeFromOverlay} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <div className="mt-4 flex flex-col items-center gap-4">
+                {isZen && running && (
+                  <GlassButton
+                    size="sm"
+                    variant="default"
+                    icon={<Square />}
+                    onClick={() => engineRef.current?.finish("completed")}
+                  >
+                    end zen session
+                  </GlassButton>
+                )}
+                <RestartHint />
+              </div>
+            </motion.div>
+          ) : (
+            saved && (
+              <motion.div
+                key={`results-${saved.id}`}
+                className="w-full"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ type: "spring", stiffness: 260, damping: 30 }}
+              >
+                <ResultsScreen
+                  result={saved}
+                  pb={pbInfo}
+                  onRestart={() => restart(false)}
+                  onRepeat={() => restart(true)}
+                  onPracticeMissed={practiceMissed}
+                />
+              </motion.div>
+            )
+          )}
+        </AnimatePresence>
+
+        {/* gaze surfaces */}
+        <ConsentModal
+          open={consentOpen}
+          onAccept={() => {
+            useGazeStore.getState().setConsented(true);
+            setConsentOpen(false);
+            void startCamera();
+          }}
+          onDecline={() => setConsentOpen(false)}
+        />
+        <AnimatePresence>
+          {calibrating && (
+            <CalibrationOverlay
+              onDone={onCalibrated}
+              onCancel={() => setCalibrating(false)}
+            />
+          )}
+        </AnimatePresence>
+        {gaze.cameraOn && settings.showCameraPreview && <CameraDock />}
+      </div>
     </div>
   );
 }

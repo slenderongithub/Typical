@@ -6,7 +6,7 @@ import "./globals.css";
 
 import { NavBar } from "@/components/app/NavBar";
 import { Toaster } from "@/components/app/Toaster";
-import { BackgroundGlow, Providers } from "@/components/glass";
+import { Providers } from "@/components/glass";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +36,9 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <Providers>
           <SessionProvider>
-            <BackgroundGlow />
             <NavBar />
             <Toaster />
-            <main className="flex flex-1 flex-col px-4 pb-12 pt-28">
+            <main className="flex flex-1 flex-col px-4 pb-12 pt-32">
               {children}
             </main>
           </SessionProvider>

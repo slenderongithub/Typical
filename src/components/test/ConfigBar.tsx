@@ -28,9 +28,6 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Rail widths (px, incl. island padding) — TestExperience keeps text clear of them. */
-export const RAIL_WIDTH = { expanded: 172, collapsed: 52 } as const;
-
 interface RailOption {
   value: string;
   label: string;
@@ -44,7 +41,7 @@ interface RailOption {
 /** A short number or letter used in place of an icon. */
 function Glyph({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[12px] font-extrabold leading-none tabular-nums tracking-tight">
+    <span className="text-[13px] font-extrabold leading-none tabular-nums tracking-tight">
       {children}
     </span>
   );
@@ -88,7 +85,7 @@ const DIFFICULTIES: RailOption[] = [
 ];
 
 const ITEM =
-  "relative flex h-9 w-full select-none items-center rounded-full px-2.5 text-sm font-semibold transition-colors duration-200";
+  "relative flex h-11 w-full select-none items-center rounded-full px-3 text-[15px] font-semibold transition-colors duration-200 short:h-10";
 const ITEM_IDLE =
   "text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground";
 
@@ -108,7 +105,7 @@ function RailLabel({
       animate={{ width: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }}
       transition={reduce ? { duration: 0 } : PILL_SPRING}
     >
-      <span className="block pl-2.5 pr-1.5">{children}</span>
+      <span className="block pl-3 pr-2">{children}</span>
     </motion.span>
   );
 }
@@ -117,7 +114,7 @@ function RailIcon({ children }: { children: ReactNode }) {
   return (
     <span
       aria-hidden
-      className="relative flex size-5 shrink-0 items-center justify-center [&>svg]:size-[18px]"
+      className="relative flex size-6 shrink-0 items-center justify-center [&>svg]:size-[22px] [&>svg]:stroke-[2.1]"
     >
       {children}
     </span>
@@ -234,7 +231,10 @@ function RailToggle({
 
 function RailDivider() {
   return (
-    <span aria-hidden className="mx-2.5 my-1 h-px bg-surface-foreground/15" />
+    <span
+      aria-hidden
+      className="mx-3 my-1.5 h-px bg-surface-foreground/15 short:my-1"
+    />
   );
 }
 
@@ -407,6 +407,8 @@ export interface ConfigBarProps {
   disabled?: boolean;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  /** live right edge of the rail (px from the viewport's left), every frame it changes */
+  onRightEdge?: (px: number) => void;
 }
 
 /**
@@ -420,8 +422,25 @@ export function ConfigBar({
   disabled,
   collapsed,
   onCollapsedChange,
+  onRightEdge,
 }: ConfigBarProps) {
   const [textModal, setTextModal] = useState(false);
+  const railRef = useRef<HTMLElement>(null);
+
+  // report the rail's right edge as its labels animate, so the text column
+  // can glide in lockstep; 0 once the rail unmounts
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el || !onRightEdge) return;
+    const ro = new ResizeObserver(() =>
+      onRightEdge(el.getBoundingClientRect().right),
+    );
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      onRightEdge(0);
+    };
+  }, [onRightEdge]);
 
   const patch = (p: Partial<TestConfig>) => onChange({ ...config, ...p });
   const hasModifiers = config.mode === "time" || config.mode === "words";
@@ -509,9 +528,10 @@ export function ConfigBar({
   return (
     <>
       <nav
+        ref={railRef}
         aria-label="test settings"
         className={cn(
-          "fixed left-3 top-1/2 z-30 flex -translate-y-1/2 flex-col items-start gap-3 transition-opacity duration-300 sm:left-5",
+          "fixed left-4 top-1/2 z-30 flex -translate-y-1/2 flex-col items-start gap-3.5 transition-opacity duration-300 sm:left-8 short:gap-2.5",
           disabled && "pointer-events-none opacity-25",
         )}
       >
@@ -523,18 +543,18 @@ export function ConfigBar({
             collapsed ? "expand test settings" : "collapse test settings"
           }
           title={collapsed ? "expand" : "collapse"}
-          className="island flex size-[52px] items-center justify-center rounded-full text-surface-foreground transition-transform active:scale-95"
+          className="island flex size-14 items-center justify-center rounded-full text-surface-foreground transition-transform active:scale-95 short:size-12"
         >
           {collapsed ? (
-            <PanelLeftOpen className="size-5" />
+            <PanelLeftOpen className="size-6" />
           ) : (
-            <PanelLeftClose className="size-5" />
+            <PanelLeftClose className="size-6" />
           )}
         </button>
 
-        <div className="flex flex-col items-stretch gap-3">
+        <div className="flex flex-col items-stretch gap-3.5 short:gap-2.5">
           {/* island 1 — what to type */}
-          <div className="island flex flex-col rounded-[1.5rem] p-1.5">
+          <div className="island flex flex-col rounded-[1.75rem] p-2">
             <RailGroup
               label="test mode"
               collapsed={collapsed}
@@ -557,7 +577,7 @@ export function ConfigBar({
 
           {/* island 2 — how hard (zen has neither modifiers nor difficulty) */}
           {config.mode !== "zen" && (
-            <div className="island flex flex-col rounded-[1.5rem] p-1.5">
+            <div className="island flex flex-col rounded-[1.75rem] p-2">
               {hasModifiers && (
                 <>
                   <div className="flex flex-col gap-0.5">

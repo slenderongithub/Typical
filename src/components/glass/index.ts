@@ -1,4 +1,3 @@
-export { BackgroundGlow } from "./BackgroundGlow";
 export {
   buttonClasses,
   GlassButton,

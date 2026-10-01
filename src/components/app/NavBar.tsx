@@ -26,7 +26,7 @@ export function LogoMark({ className }: { className?: string }) {
       src="/logo.png"
       alt=""
       aria-hidden
-      className={cn("size-8 shrink-0", className)}
+      className={cn("size-10 shrink-0", className)}
     />
   );
 }
@@ -64,19 +64,21 @@ export function NavBar() {
 
   return (
     <motion.header
-      className="fixed inset-x-0 top-3 z-40 flex justify-center px-3 sm:top-4 sm:px-4"
+      // the full-width strip must not swallow clicks meant for things beside
+      // the pill (e.g. the top of the test config rail) — only the nav is live
+      className="pointer-events-none fixed inset-x-0 top-3 z-40 flex justify-center px-3 sm:top-4 sm:px-4"
       animate={{ opacity: testRunning ? 0.06 : 1 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      style={{ pointerEvents: testRunning ? "none" : "auto" }}
     >
       <nav
         ref={navRef}
-        className="island flex max-w-full items-center gap-1 rounded-full p-1.5 sm:pl-2"
+        style={{ pointerEvents: testRunning ? "none" : "auto" }}
+        className="island flex max-w-full items-center gap-1 rounded-full p-2 sm:pl-2.5"
       >
         <Link
           href="/"
           aria-label="Typical — home"
-          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[17px] font-bold tracking-tight text-surface-foreground sm:pr-3"
+          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[19px] font-extrabold tracking-tight text-surface-foreground sm:pr-3.5"
         >
           <LogoMark />
           <span className="hidden sm:inline">Typical</span>
@@ -104,7 +106,7 @@ export function NavBar() {
                     aria-current={active ? "page" : undefined}
                     aria-label={l.label}
                     className={cn(
-                      "relative flex h-10 items-center rounded-full px-3 text-[15px] font-semibold transition-colors sm:px-4",
+                      "relative flex h-12 items-center rounded-full px-3.5 text-base font-semibold transition-colors sm:px-5",
                       active
                         ? "text-primary-foreground"
                         : "text-surface-muted hover:text-surface-foreground",
@@ -117,7 +119,7 @@ export function NavBar() {
                         transition={PILL_SPRING}
                       />
                     )}
-                    <l.icon aria-hidden className="relative size-[18px] sm:hidden" />
+                    <l.icon aria-hidden className="relative size-[22px] sm:hidden" />
                     <span className="relative hidden sm:inline">{l.label}</span>
                   </Link>
                 );
@@ -126,7 +128,7 @@ export function NavBar() {
           </motion.div>
         </AnimatePresence>
 
-        <span aria-hidden className="mx-1 hidden h-6 w-px bg-surface-foreground/15 sm:block" />
+        <span aria-hidden className="mx-1.5 hidden h-7 w-px bg-surface-foreground/15 sm:block" />
 
         <div className="flex shrink-0 items-center gap-1">
           <ThemeToggle open={themeOpen} onOpenChange={setThemeOpen} />
@@ -135,14 +137,14 @@ export function NavBar() {
               href="/settings"
               title={session?.user?.name ?? session?.user?.email ?? "account"}
               aria-label="your account"
-              className="btn-primary flex size-10 items-center justify-center rounded-full text-sm font-bold"
+              className="btn-primary flex size-12 items-center justify-center rounded-full text-base font-bold"
             >
               {initial}
             </Link>
           ) : (
             <Link
               href="/login"
-              className="btn-primary flex h-10 items-center rounded-full px-4 text-sm font-semibold"
+              className="btn-primary flex h-12 items-center rounded-full px-5 text-base font-semibold"
             >
               sign in
             </Link>

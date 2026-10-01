@@ -464,13 +464,19 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - `.island` is the opaque surface with a deep drop shadow, used by the nav, the config rail and the camera button (`GlassButton variant="island"`).
   - `.glass-chip` is filled with `--primary`, so active items must use `text-primary-foreground`.
   - basil's primary is now cherry tomato.
-  - The dot grid covers the whole page with per-theme `--grid-dot`: light dots on dark themes, dark dots on light.
+  - The dot grid and `BackgroundGlow` were later removed entirely (round 10); backgrounds are flat.
 - **ConfigBar is a fixed left rail:** a round collapse toggle, then island 1 (mode | amount), then island 2 (modifiers | difficulty; hidden in zen). Collapsed shows icons only, with labels animating to width 0.
   - The collapsed state lives in TestExperience and persists in localStorage `nolook:rail-collapsed`; it defaults to collapsed under 1280px.
   - The rail must render OUTSIDE the transformed phase `motion.div`, otherwise `fixed` re-anchors.
-  - `.rail-offset` + `--rail-w` (from `RAIL_WIDTH`) pads the test column so text never slides under the rail. The padding is symmetric on md+ so the text stays centred.
+  - Round 10 change: ConfigBar reports its live right edge (ResizeObserver → `onRightEdge`). TestExperience writes it to `--rail-right` on the root via ref, with no re-render.
+  - `.rail-aware` pads the column by `--rail-pad`, so the text block centres in the space right of the rail and glides with a padding-left transition.
+  - `.rail-counter` translates the camera row back by half the pad so it stays centred under the nav.
+  - The `short:` custom variant (max-height 860px) shrinks rail items.
+  - The nav header strip is `pointer-events-none`; only the pill is live. The full-width strip used to swallow clicks on the top of the rail.
 - **AutoHeight gotcha:** the outer box is sized to its child, so any padding must go on a child div, never on AutoHeight's `className`. This clipped the leaderboard.
 - **Turbopack gotcha (again):** CSS edits can take 10–20s or more to be served. Verify with `curl` against the served chunk before trusting a screenshot.
+
+- **Placeholder leaderboard data:** `node prisma/seed-placeholders.mjs` replaces 40 fake users (`@placeholder.typical` emails) with 480 time-mode runs spread across today, this week and older, plus clean and assisted. `--clean` removes them; deletes cascade, so real accounts are untouched. It was run against the Neon DB on 2026-10-01.
 
 ## Keeping this file current
 

@@ -88,8 +88,8 @@ export async function renderShareCard(result: SavedResult): Promise<Blob> {
   const success = token("--success", "#3fd68a");
   const warning = token("--warning", "#f3c355");
   const border = token("--glass-border", "rgba(255,255,255,0.1)");
-  const glow1 = token("--glow-1", "#1d3a8a");
-  const glow2 = token("--glow-2", "#4c1d95");
+  const glow1 = token("--primary", "#9dabff");
+  const glow2 = token("--surface", "#1f2550");
   const surface = token("--glass-strong", "rgba(255,255,255,0.07)");
   const highlight = token("--glass-highlight", "rgba(255,255,255,0.09)");
 
