@@ -639,7 +639,7 @@ export function TestExperience() {
               {gaze.supported && (
                 <div
                   className={cn(
-                    "island -mt-6 flex items-center gap-1 rounded-full p-1.5 transition-opacity duration-300 short:mt-0",
+                    "island rail-pinned -mt-6 flex items-center gap-1 rounded-full p-1.5 short:mt-0",
                     testRunning && "pointer-events-none opacity-30",
                   )}
                 >
