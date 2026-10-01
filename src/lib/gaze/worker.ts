@@ -13,6 +13,7 @@ import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import type {
   Category,
   FaceLandmarkerResult,
+  NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
 import type { GazeWorkerRequest, GazeWorkerResponse } from "@/lib/types";
 
@@ -97,18 +98,37 @@ function eulerFromColumnMajor(d: number[]): {
   return { pitch: -pitch * toDeg, yaw: yaw * toDeg, roll: roll * toDeg };
 }
 
-/** Mean score of the named blendshape categories (0 when absent). */
-function blendMean(categories: Category[] | undefined, names: string[]): number {
-  if (!categories) return 0;
-  let sum = 0;
-  let n = 0;
-  for (const c of categories) {
-    if (names.includes(c.categoryName)) {
-      sum += c.score;
-      n++;
-    }
-  }
-  return n > 0 ? sum / n : 0;
+/** Score of the named blendshape category (0 when absent). */
+function blend(categories: Category[] | undefined, name: string): number {
+  return categories?.find((c) => c.categoryName === name)?.score ?? 0;
+}
+
+/**
+ * How far the iris centre sits below the line through the eye's two corners,
+ * in eye-widths. Corners are fixed to the skull, so this isolates eye
+ * rotation from head pose, and measuring perpendicular to the corner line
+ * cancels head roll. Pixel space (w×h) keeps the geometry isotropic.
+ */
+function irisDown(
+  lm: NormalizedLandmark[],
+  cornerA: number,
+  cornerB: number,
+  iris: number,
+  w: number,
+  h: number,
+): number {
+  const p = (i: number) => ({ x: lm[i].x * w, y: lm[i].y * h });
+  let a = p(cornerA);
+  let b = p(cornerB);
+  if (b.x < a.x) [a, b] = [b, a];
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
+  const len = Math.hypot(vx, vy) || 1;
+  const c = p(iris);
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  // (-vy, vx) is the corner line's normal pointing down in image space
+  return ((c.x - mx) * -vy + (c.y - my) * vx) / (len * len);
 }
 
 function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
@@ -116,6 +136,7 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     bitmap.close();
     return;
   }
+  const { width, height } = bitmap;
   let result: FaceLandmarkerResult;
   try {
     const ts = Math.max(timestamp, lastVideoTs + 1);
@@ -141,6 +162,9 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     ({ pitch, yaw, roll } = eulerFromColumnMajor(matrix.data));
   }
   const categories = result.faceBlendshapes[0]?.categories;
+  const lm = result.faceLandmarks[0];
+  // 478-point mesh: iris centres 468 (subject's right) / 473 (left)
+  const hasIris = !!lm && lm.length >= 478;
   ctx.postMessage({
     type: "result",
     timestamp,
@@ -148,7 +172,12 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     pitch,
     yaw,
     roll,
-    eyeLookDown: blendMean(categories, ["eyeLookDownLeft", "eyeLookDownRight"]),
+    irisDownL: hasIris ? irisDown(lm, 362, 263, 473, width, height) : 0,
+    irisDownR: hasIris ? irisDown(lm, 33, 133, 468, width, height) : 0,
+    lookDownL: blend(categories, "eyeLookDownLeft"),
+    lookDownR: blend(categories, "eyeLookDownRight"),
+    lookUpL: blend(categories, "eyeLookUpLeft"),
+    lookUpR: blend(categories, "eyeLookUpRight"),
     confidence: faces > 0 ? 1 : 0,
   });
 }

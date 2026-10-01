@@ -121,13 +121,15 @@ models (`User`/`Account`/`Session`/`VerificationToken`, plus `passwordHash`,
 Two independent layers:
 
 - **Gaze integrity** (client, honesty-first heuristic — head pose + eye
-  blendshapes via MediaPipe, *not* precise gaze): calibration samples three
-  poses — screen center, screen bottom edge, and the **keyboard itself** —
-  and `src/lib/gaze/heuristics.ts` scores how far head pitch OR eyeLookDown
-  (whichever is further) has moved from the bottom-edge pose toward the
-  keyboard pose (1 = halfway = the decision line). Blinks are not a signal
-  (the old blink-hold suppressed real glances, since eyelids drop when
-  looking down). `GazeController` debounces it (400ms to enter
+  blendshapes via MediaPipe, *not* precise gaze): calibration records
+  labelled frames — four screen dots (centre + bottom-left/centre/right) as
+  "screen", then the keyboard itself as "keyboard" — and
+  `src/lib/gaze/heuristics.ts` trains a per-user logistic regression on them
+  in-browser (7 features: head pitch, iris offset below each eye's corner
+  line from mesh landmarks 468/473, per-eye eyeLookDown/Up). Its
+  P(keyboard) drives the peek state (enter ≥ 0.8, exit < 0.5). Blinks are not
+  a signal. A fit with < 8 frames per class is invalid and keeps the old
+  calibration. `GazeController` debounces it (400ms to enter
   "down", 300ms hysteresis to exit, 600ms to declare tracking "lost") into
   peek events. Produces `IntegrityStatus`: `clean` / `assisted` / `untracked`.
   When the camera is on, a run also earns a **verified score**
@@ -507,6 +509,8 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - Dead code (unused since the initial commit, export-only): `GlassSurface.tsx`, `GooeyFilter.tsx`.
 
 - **Round 14: gaze accuracy (2026-10-01):** detection now targets "eyes on the keyboard instead of the screen" only. Calibration gained a third "look at your keyboard" step (2s settle + 1.4s sample, no dot to watch), `CalibrationData` gained `keyboardPitch`/`keyboardLookDown`, `eyeBlink` was removed from `GazeFrameResult` and the worker, and the score threshold now sits halfway between the measured bottom-edge and keyboard poses instead of being extrapolated from two on-screen points. Floors: 8° pitch / 0.1 lookDown span. Next steps if still noisy: iris landmarks (468–477) as a sharper eye signal, then a per-user logistic regression fitted on calibration frames.
+
+- **Round 15: per-user gaze classifier (2026-10-01):** the hand-tuned score is replaced by a logistic regression trained on calibration frames (`trainGaze` / `keyboardProbability` / `gazeFeatures` in heuristics.ts; class-balanced, L2 0.01, 500 GD steps, per-feature std floors `MIN_SCALE` as the tuning knob). `CalibrationData` is now `{ weights, bias, mean, scale, valid }`; `GazeFrameResult.eyeLookDown` became `irisDownL/R`, `lookDownL/R`, `lookUpL/R`. Controller API: `resetCalibration()` → `collectCalibration(label, ms)` per step → `finishCalibration()`. Calibration takes ~10s. Not yet done: a record mode to measure real-world precision/recall.
 
 - **Round 17: UI fixes + perf pass (2026-10-01):**
   - Defaults: theme **dawn** (`Providers` defaultTheme + `DEFAULT_SETTINGS.theme`); config rail starts **collapsed** (`useState(true)`, localStorage `"0"` re-expands).

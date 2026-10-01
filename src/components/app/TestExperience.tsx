@@ -537,11 +537,16 @@ export function TestExperience() {
   }, [gaze.consented, gaze.cameraOn, startCamera, stopCamera]);
 
   const onCalibrated = useCallback((data: CalibrationData) => {
+    setCalibrating(false);
+    // a failed fit keeps whatever calibration was there before
+    if (!data.valid) {
+      toast("calibration failed — keep your face in view and try again");
+      return;
+    }
     try {
       getController().setCalibration(data);
     } catch {}
     useGazeStore.getState().setCalibrated(true);
-    setCalibrating(false);
   }, []);
 
   /* ── results actions ──────────────────────────────────────────────── */

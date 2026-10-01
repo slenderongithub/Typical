@@ -3,7 +3,7 @@
  *
  * Owns the camera stream, the inference worker (~12fps frame loop), the
  * peek/lost debouncing state machine, and per-test integrity sessions.
- * Honesty contract: head-pose + eye-direction heuristics only; frames never leave
+ * Honesty contract: head-pose + eye-direction classification only; frames never leave
  * the browser; calibration lives in memory for the tab's lifetime.
  */
 
@@ -17,13 +17,14 @@ import {
 } from "@/lib/types";
 
 import {
-  computeDownScore,
   DOWN_DEBOUNCE_MS,
   DOWN_ENTER_SCORE,
   DOWN_EXIT_SCORE,
+  gazeFeatures,
+  keyboardProbability,
   LOST_DEBOUNCE_MS,
-  median,
   MIN_CONFIDENCE,
+  trainGaze,
   UP_DEBOUNCE_MS,
 } from "./heuristics";
 
@@ -55,11 +56,10 @@ export class GazeController {
   private peeking = false;
   private peekStartTs = 0;
 
-  // calibration sampling
-  private samples: { pitch: number[]; lookDown: number[] } | null = null;
-  private centerSample: { pitch: number; lookDown: number } | null = null;
-  private bottomSample: { pitch: number; lookDown: number } | null = null;
-  private keyboardSample: { pitch: number; lookDown: number } | null = null;
+  // calibration dataset: feature rows + labels (0 = screen, 1 = keyboard)
+  private calX: number[][] = [];
+  private calY: number[] = [];
+  private collectingLabel: 0 | 1 | null = null;
 
   // integrity session
   private sessionActive = false;
@@ -165,46 +165,29 @@ export class GazeController {
 
   /* ── calibration ────────────────────────────────────────────────── */
 
-  /** Collect median pitch/lookDown over a window while the user holds a target. */
-  collectCalibration(
-    step: "center" | "bottom" | "keyboard",
-    ms = 1200,
-  ): Promise<{ pitch: number; lookDown: number }> {
-    this.samples = { pitch: [], lookDown: [] };
+  /** Drop any frames from an earlier (possibly cancelled) calibration. */
+  resetCalibration(): void {
+    this.calX = [];
+    this.calY = [];
+    this.collectingLabel = null;
+  }
+
+  /** Record labelled frames for `ms` while the user holds a target. */
+  collectCalibration(label: 0 | 1, ms: number): Promise<void> {
+    this.collectingLabel = label;
     return new Promise((resolve) => {
       setTimeout(() => {
-        const s = this.samples;
-        this.samples = null;
-        const sample = {
-          pitch: median(s?.pitch ?? []),
-          lookDown: median(s?.lookDown ?? []),
-        };
-        if (step === "center") this.centerSample = sample;
-        else if (step === "bottom") this.bottomSample = sample;
-        else this.keyboardSample = sample;
-        resolve(sample);
+        this.collectingLabel = null;
+        resolve();
       }, ms);
     });
   }
 
-  /** Build CalibrationData from the three collected steps. */
+  /** Train the per-user classifier; only a valid fit replaces the current one. */
   finishCalibration(): CalibrationData {
-    const center = this.centerSample ?? { pitch: 0, lookDown: 0 };
-    const bottom = this.bottomSample ?? { pitch: 8, lookDown: 0.35 };
-    const keyboard = this.keyboardSample ?? { pitch: 20, lookDown: 0.6 };
-    const data: CalibrationData = {
-      neutralPitch: center.pitch,
-      bottomPitch: bottom.pitch,
-      neutralLookDown: center.lookDown,
-      bottomLookDown: bottom.lookDown,
-      keyboardPitch: keyboard.pitch,
-      keyboardLookDown: keyboard.lookDown,
-      valid:
-        this.centerSample !== null &&
-        this.bottomSample !== null &&
-        this.keyboardSample !== null,
-    };
-    this.setCalibration(data);
+    const data = trainGaze(this.calX, this.calY);
+    this.resetCalibration();
+    if (data.valid) this.setCalibration(data);
     return data;
   }
 
@@ -352,9 +335,9 @@ export class GazeController {
     this.lastFrame = frame;
     const now = performance.now();
 
-    if (this.samples && frame.faces > 0) {
-      this.samples.pitch.push(frame.pitch);
-      this.samples.lookDown.push(frame.eyeLookDown);
+    if (this.collectingLabel !== null && frame.faces === 1) {
+      this.calX.push(gazeFeatures(frame));
+      this.calY.push(this.collectingLabel);
     }
 
     const tracked = frame.faces > 0 && frame.confidence >= MIN_CONFIDENCE;
@@ -394,7 +377,7 @@ export class GazeController {
       return;
     }
 
-    this.score = computeDownScore(frame, this.calibration);
+    this.score = keyboardProbability(frame, this.calibration);
 
     if (this.score >= DOWN_ENTER_SCORE) {
       this.upSince = 0;

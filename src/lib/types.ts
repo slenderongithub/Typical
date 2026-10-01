@@ -148,8 +148,14 @@ export interface GazeFrameResult {
   pitch: number;
   yaw: number;
   roll: number;
-  /** 0–1 mean of eyeLookDownLeft/Right blendshapes */
-  eyeLookDown: number;
+  /** iris offset below each eye's corner line, in eye-widths (L = subject's left) */
+  irisDownL: number;
+  irisDownR: number;
+  /** 0–1 eyeLookDown / eyeLookUp blendshapes per eye */
+  lookDownL: number;
+  lookDownR: number;
+  lookUpL: number;
+  lookUpR: number;
   /** 0–1 face presence confidence */
   confidence: number;
 }
@@ -166,17 +172,17 @@ export type GazeWorkerResponse =
   | { type: "error"; message: string }
   | ({ type: "result" } & GazeFrameResult);
 
+/**
+ * Per-user logistic regression over `gazeFeatures()` (lib/gaze/heuristics),
+ * trained on calibration frames: screen dots = 0, keyboard = 1.
+ */
 export interface CalibrationData {
-  /** median pitch while looking at screen center */
-  neutralPitch: number;
-  /** median pitch while looking at bottom edge of screen */
-  bottomPitch: number;
-  neutralLookDown: number;
-  bottomLookDown: number;
-  /** median pitch / lookDown while actually looking at the keyboard */
-  keyboardPitch: number;
-  keyboardLookDown: number;
-  /** completed successfully */
+  weights: number[];
+  bias: number;
+  /** per-feature standardization fitted on the calibration frames */
+  mean: number[];
+  scale: number[];
+  /** enough frames of both classes were collected */
   valid: boolean;
 }
 

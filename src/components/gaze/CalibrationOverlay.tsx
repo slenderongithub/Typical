@@ -7,35 +7,31 @@ import { GlassButton } from "@/components/glass";
 import { getController } from "@/lib/gaze/store";
 import type { CalibrationData } from "@/lib/types";
 
-const HOLD_MS = 1400;
-/** time to read the prompt and move the eyes before sampling starts */
-const SETTLE_MS = { center: 650, bottom: 650, keyboard: 2000 } as const;
 const RING_R = 26;
 const RING_C = 2 * Math.PI * RING_R;
 
-type Step = "intro" | "center" | "bottom" | "keyboard" | "done";
+const EDGE = "3.5rem";
+const BOTTOM = `calc(100% - ${EDGE})`;
 
-const COPY: Record<Step, { title: string; hint: string }> = {
-  intro: {
-    title: "quick calibration",
-    hint: "screen, bottom edge, then your keyboard — about six seconds",
-  },
-  center: {
-    title: "look at the dot",
-    hint: "keep your head relaxed and your eyes on the dot",
-  },
-  bottom: {
-    title: "now the bottom edge",
-    hint: "follow the dot down — this marks the lowest on-screen gaze",
-  },
-  keyboard: {
-    title: "now look at your keyboard",
-    hint: "eyes on the keys for about four seconds, then look back up",
-  },
-  done: {
-    title: "calibrated",
-    hint: "glances toward your keyboard will now count against you",
-  },
+/**
+ * Calibration targets. Screen dots (label 0) hug the bottom edge, where
+ * screen-vs-keyboard is hardest to tell apart; the keyboard step (label 1)
+ * has no dot to watch, so it gets time to read the prompt first.
+ * settle = ms before sampling, hold = ms of labelled frames.
+ */
+const STEPS = [
+  { label: 0, top: "50%", left: "50%", settle: 650, hold: 1200, title: "look at the dot", hint: "keep your head relaxed" },
+  { label: 0, top: BOTTOM, left: EDGE, settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
+  { label: 0, top: BOTTOM, left: "50%", settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
+  { label: 0, top: BOTTOM, left: `calc(100% - ${EDGE})`, settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
+  { label: 1, top: BOTTOM, left: "50%", settle: 2000, hold: 2400, title: "now look at your keyboard", hint: "eyes on the keys for about five seconds, then look back up" },
+] as const;
+
+type Step = "intro" | "done" | number;
+
+const COPY = {
+  intro: { title: "quick calibration", hint: "a few dots, then your keyboard — about ten seconds" },
+  done: { title: "calibrated", hint: "glances toward your keyboard will now count against you" },
 };
 
 export interface CalibrationOverlayProps {
@@ -44,10 +40,9 @@ export interface CalibrationOverlayProps {
 }
 
 /**
- * Three-step calibration: screen center, bottom-center edge, then the
- * keyboard itself (no dot to hold — the user can't see the screen). The dot
- * carries an animated progress ring while the controller collects median
- * pose samples — no dead time, every state animates.
+ * Labelled-frame calibration: screen dots, then the keyboard. The controller
+ * trains a per-user classifier on the frames when the last step finishes.
+ * The dot carries an animated progress ring while frames are recorded.
  */
 export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps) {
   const reduce = useReducedMotion();
@@ -63,20 +58,19 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
   }, []);
 
   useEffect(() => {
-    if (step !== "center" && step !== "bottom" && step !== "keyboard") return;
+    if (typeof step !== "number") return;
+    const target = STEPS[step];
     let alive = true;
     const run = async () => {
-      // let the dot's spring travel settle before sampling
-      await new Promise((r) => setTimeout(r, SETTLE_MS[step]));
+      // let the dot's spring travel settle (or the prompt be read) first
+      await new Promise((r) => setTimeout(r, target.settle));
       if (!alive || cancelled.current) return;
       setCollecting(true);
-      await getController().collectCalibration(step, HOLD_MS);
+      await getController().collectCalibration(target.label, target.hold);
       if (!alive || cancelled.current) return;
       setCollecting(false);
-      if (step === "center") {
-        setStep("bottom");
-      } else if (step === "bottom") {
-        setStep("keyboard");
+      if (step + 1 < STEPS.length) {
+        setStep(step + 1);
       } else {
         setStep("done");
         const data = getController().finishCalibration();
@@ -91,10 +85,11 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
     };
   }, [step, onDone]);
 
-  const dotPos =
-    step === "bottom" || step === "keyboard"
-      ? { top: "calc(100% - 3.5rem)", left: "50%" }
-      : { top: "50%", left: "50%" };
+  const current = typeof step === "number" ? STEPS[step] : null;
+  const copy = current ?? COPY[step as "intro" | "done"];
+  const dotPos = current
+    ? { top: current.top, left: current.left }
+    : { top: BOTTOM, left: "50%" };
 
   return (
     <motion.div
@@ -115,10 +110,10 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
       >
         <h2 className="text-2xl font-bold text-foreground">
-          {COPY[step].title}
+          {copy.title}
         </h2>
         <p className="max-w-sm text-sm text-muted-foreground">
-          {COPY[step].hint}
+          {copy.hint}
         </p>
       </motion.div>
 
@@ -132,7 +127,13 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
           <GlassButton variant="ghost" onClick={onCancel}>
             cancel
           </GlassButton>
-          <GlassButton variant="primary" onClick={() => setStep("center")}>
+          <GlassButton
+            variant="primary"
+            onClick={() => {
+              getController().resetCalibration();
+              setStep(0);
+            }}
+          >
             start
           </GlassButton>
         </motion.div>
@@ -178,7 +179,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
                 strokeDashoffset: collecting || step === "done" ? 0 : RING_C,
               }}
               transition={{
-                duration: collecting ? HOLD_MS / 1000 : 0.3,
+                duration: collecting && current ? current.hold / 1000 : 0.3,
                 ease: "linear",
               }}
             />
