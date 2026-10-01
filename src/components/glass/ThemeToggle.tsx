@@ -15,14 +15,70 @@ import { startThemeTransition } from "./theme-transition";
  * token-only color rule, since tokens can only describe the active theme.
  */
 export const THEMES = [
-  { name: "midnight", swatch: "#9dabff", bg: "#10132a", fg: "#f7f8ff" },
-  { name: "dawn", swatch: "#4453e6", bg: "#eef0fb", fg: "#0c0e1a" },
-  { name: "aurora", swatch: "#5ff2c0", bg: "#0a1e1c", fg: "#f1fff9" },
-  { name: "sunset", swatch: "#ffa57e", bg: "#22120e", fg: "#fff6f1" },
-  { name: "basil", swatch: "#a9c4a5", bg: "#4a3228", fg: "#fbf3ec" },
-  { name: "cannoli", swatch: "#d32e5e", bg: "#f1efe2", fg: "#0f2a1c" },
-  { name: "pigeon", swatch: "#c4ec3a", bg: "#34373c", fg: "#fbeeeb" },
-  { name: "poseidon", swatch: "#f5904a", bg: "#123955", fg: "#f3f9fd" },
+  {
+    name: "midnight",
+    swatch: "#9dabff",
+    bg: "#10132a",
+    fg: "#f7f8ff",
+    surface: "#1f2550",
+    onSurface: "#f7f8ff",
+  },
+  {
+    name: "dawn",
+    swatch: "#4453e6",
+    bg: "#eef0fb",
+    fg: "#0c0e1a",
+    surface: "#ffffff",
+    onSurface: "#0c0e1a",
+  },
+  {
+    name: "aurora",
+    swatch: "#5ff2c0",
+    bg: "#0a1e1c",
+    fg: "#f1fff9",
+    surface: "#15403a",
+    onSurface: "#f1fff9",
+  },
+  {
+    name: "sunset",
+    swatch: "#ffa57e",
+    bg: "#22120e",
+    fg: "#fff6f1",
+    surface: "#4a2a22",
+    onSurface: "#fff6f1",
+  },
+  {
+    name: "basil",
+    swatch: "#f0584a",
+    bg: "#4a3228",
+    fg: "#fbf3ec",
+    surface: "#8fa98b",
+    onSurface: "#1c2a1a",
+  },
+  {
+    name: "cannoli",
+    swatch: "#d32e5e",
+    bg: "#f1efe2",
+    fg: "#0f2a1c",
+    surface: "#1f7349",
+    onSurface: "#f6f4e8",
+  },
+  {
+    name: "pigeon",
+    swatch: "#c4ec3a",
+    bg: "#34373c",
+    fg: "#fbeeeb",
+    surface: "#f2d3cf",
+    onSurface: "#2a2c30",
+  },
+  {
+    name: "poseidon",
+    swatch: "#f5904a",
+    bg: "#123955",
+    fg: "#f3f9fd",
+    surface: "#4ca5c7",
+    onSurface: "#0b2638",
+  },
 ] as const;
 
 /** Palette button — toggles the nav into its theme-picking state. */
@@ -46,7 +102,11 @@ export function ThemeToggle({
           : "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground",
       )}
     >
-      {open ? <X className="size-[22px]" /> : <Palette className="size-[22px]" />}
+      {open ? (
+        <X className="size-[22px]" />
+      ) : (
+        <Palette className="size-[22px]" />
+      )}
     </button>
   );
 }
@@ -63,7 +123,11 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div role="radiogroup" aria-label="theme" className="flex items-center gap-0.5">
+    <div
+      role="radiogroup"
+      aria-label="theme"
+      className="flex items-center gap-0.5"
+    >
       {THEMES.map((t) => {
         const active = mounted && theme === t.name;
         return (
@@ -80,7 +144,9 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
             }}
             className={cn(
               "relative flex size-12 items-center justify-center rounded-full transition-colors",
-              active ? "text-surface-foreground" : "hover:bg-surface-foreground/10",
+              active
+                ? "text-surface-foreground"
+                : "hover:bg-surface-foreground/10",
             )}
           >
             {active && (
@@ -95,7 +161,10 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
               className="relative flex size-7 items-center justify-center rounded-full shadow-[0_0_0_1.5px_rgba(255,255,255,0.35),0_2px_6px_-1px_rgba(0,0,0,0.5)]"
               style={{ backgroundColor: t.bg }}
             >
-              <span className="size-2.5 rounded-full" style={{ backgroundColor: t.swatch }} />
+              <span
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: t.swatch }}
+              />
             </span>
           </button>
         );

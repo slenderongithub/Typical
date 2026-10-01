@@ -19,7 +19,7 @@ export interface KeyHeatmapProps {
 
 /**
  * QWERTY keyboard tinted by per-key miss rate — a sequential single-hue scale
- * from transparent to danger at ≥40% misses. Hovering (or focusing) a key pops
+ * from transparent to the theme accent at ≥40% misses. Hovering (or focusing) a key pops
  * the cap and shows its accuracy in the header readout, so nothing overlaps.
  */
 export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
@@ -54,8 +54,10 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
     const s = keyStats[k];
     const total = s ? s.hits + s.misses : 0;
     const rate = total > 0 ? s!.misses / total : 0;
-    // transparent → danger, saturating at a 40% miss rate
-    const tint = total > 0 ? clamp((rate / 0.4) * 46, 0, 46) : 0;
+    // transparent → theme accent, saturating at a 40% miss rate
+    const tint = total > 0 ? clamp((rate / 0.4) * 85, 0, 85) : 0;
+    // once the accent dominates, its own text colour keeps the letter legible
+    const onAccent = tint > 50;
     const isActive = tip === k;
     const hasData = total > 0;
 
@@ -71,13 +73,13 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
         className={cn(
           "relative flex size-12 items-center justify-center rounded-xl border font-mono sm:size-14",
           hasData
-            ? "glass text-foreground"
+            ? cn("glass", onAccent ? "text-primary-foreground" : "text-foreground")
             : "glass-subtle text-faint-foreground",
         )}
         style={{
           backgroundColor:
             tint > 0
-              ? `color-mix(in oklch, var(--danger) ${tint}%, var(--glass))`
+              ? `color-mix(in srgb, var(--primary) ${tint}%, var(--glass))`
               : undefined,
           boxShadow: isActive
             ? "0 0 0 2px color-mix(in oklch, var(--primary) 70%, transparent), 0 10px 28px -8px var(--glass-shadow)"
@@ -99,7 +101,7 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
           transition={{ type: "spring", stiffness: 500, damping: 26 }}
           className={cn(
             "text-lg leading-none",
-            isActive && "text-foreground",
+            isActive && !onAccent && "text-foreground",
           )}
         >
           {k}

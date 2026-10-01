@@ -632,7 +632,13 @@ export function TestExperience() {
                     size="sm"
                     variant="island"
                     onClick={onGazeButton}
-                    icon={gaze.cameraOn ? <VideoOff /> : <ScanFace />}
+                    icon={
+                    gaze.cameraOn ? (
+                      <VideoOff className="text-primary" />
+                    ) : (
+                      <ScanFace className="text-primary" />
+                    )
+                  }
                   >
                     {gaze.cameraOn ? "turn camera off" : "verify with camera"}
                   </GlassButton>

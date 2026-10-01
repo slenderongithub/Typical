@@ -484,6 +484,14 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - `PBCelebration` is a filled accent chip (trophy, "+delta") with spring-in, an outline ripple, a sheen and a trophy wiggle.
   - The share card (`shareCard.ts`) keeps the island-card design: logo + wordmark, accent mode chip, huge wpm, the run's curve in an inset panel and stat pills, using the page's real font.
 
+- **Round 12 polish:**
+  - The settings theme picker tiles are miniatures of the site (bg, nav and rail islands, typing lines with the accent caret, name chip). `THEMES` now carries `surface`/`onSurface` for this; keep it in sync with globals.css.
+  - The history table is `table-fixed` with all columns centred.
+  - KeyHeatmap tints with `--primary`, mixed `in srgb` (oklch drifted through purple), up to 85%. Letters flip to `text-primary-foreground` past 50%.
+  - The camera button icon uses `text-primary`.
+  - The rail's collapse button stretches to the islands' width (a pill with a "collapse" label when expanded).
+  - IntegrityBadge has no info tooltip, and untracked runs read just "untracked".
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

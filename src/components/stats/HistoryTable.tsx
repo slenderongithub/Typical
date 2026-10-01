@@ -153,15 +153,15 @@ export function HistoryTable({ results }: HistoryTableProps) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] border-collapse text-sm">
+              <table className="w-full min-w-[560px] table-fixed border-collapse text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                    <th className="pb-2 pl-3 font-medium">when</th>
+                  <tr className="text-center text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <th className="pb-2 font-medium">when</th>
                     <th className="pb-2 font-medium">mode</th>
-                    <th className="pb-2 text-right font-medium">wpm</th>
-                    <th className="pb-2 text-right font-medium">acc</th>
-                    <th className="pb-2 text-right font-medium">cons</th>
-                    <th className="pb-2 pl-6 font-medium">integrity</th>
+                    <th className="pb-2 font-medium">wpm</th>
+                    <th className="pb-2 font-medium">acc</th>
+                    <th className="pb-2 font-medium">cons</th>
+                    <th className="pb-2 font-medium">integrity</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -228,12 +228,12 @@ function HistoryRow({
         onClick={onToggle}
       >
         <td
-          className="py-2.5 pl-3 text-muted-foreground"
+          className="py-2.5 text-center text-muted-foreground"
           title={new Date(r.createdAt).toLocaleString()}
         >
           {relativeTime(r.createdAt)}
         </td>
-        <td>
+        <td className="text-center">
           <span className="glass-subtle rounded-full px-2.5 py-0.5 text-xs text-muted-foreground">
             {r.mode === "time"
               ? `time ${r.config.duration}`
@@ -242,17 +242,17 @@ function HistoryRow({
                 : r.mode}
           </span>
         </td>
-        <td className="text-right font-semibold tabular-nums text-foreground">
+        <td className="text-center font-semibold tabular-nums text-foreground">
           {Math.round(r.wpm)}
         </td>
-        <td className="text-right tabular-nums text-muted-foreground">
+        <td className="text-center tabular-nums text-muted-foreground">
           {Math.round(r.accuracy)}%
         </td>
-        <td className="text-right tabular-nums text-muted-foreground">
+        <td className="text-center tabular-nums text-muted-foreground">
           {Math.round(r.consistency)}%
         </td>
-        <td className="pl-6">
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <td>
+          <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <GlassDot tone={INTEGRITY_TONE[r.integrity]} />
             {r.integrity}
           </span>
@@ -269,7 +269,7 @@ function HistoryRow({
                 transition={{ type: "spring", stiffness: 300, damping: 32 }}
                 className="overflow-hidden"
               >
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-3 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-3 py-3 text-xs text-muted-foreground">
                   <Sparkline timeline={r.timeline} />
                   <span>
                     raw{" "}

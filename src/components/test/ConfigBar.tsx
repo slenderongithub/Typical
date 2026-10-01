@@ -531,7 +531,7 @@ export function ConfigBar({
         ref={railRef}
         aria-label="test settings"
         className={cn(
-          "fixed left-4 top-1/2 z-30 flex -translate-y-1/2 flex-col items-start gap-3.5 transition-opacity duration-300 sm:left-8 short:gap-2.5",
+          "fixed left-4 top-1/2 z-30 flex -translate-y-1/2 flex-col items-stretch gap-3.5 transition-opacity duration-300 sm:left-8 short:gap-2.5",
           disabled && "pointer-events-none opacity-25",
         )}
       >
@@ -543,13 +543,14 @@ export function ConfigBar({
             collapsed ? "expand test settings" : "collapse test settings"
           }
           title={collapsed ? "expand" : "collapse"}
-          className="island flex size-14 items-center justify-center rounded-full text-surface-foreground transition-transform active:scale-95 short:size-12"
+          // stretches to the islands' width: a pill, not a circle; its icon
+          // lines up with the item icons below (island p-2 + item px-3)
+          className="island flex h-14 w-full items-center rounded-full px-5 text-surface-foreground transition-transform active:scale-[0.97] short:h-12"
         >
-          {collapsed ? (
-            <PanelLeftOpen className="size-6" />
-          ) : (
-            <PanelLeftClose className="size-6" />
-          )}
+          <RailIcon>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</RailIcon>
+          <RailLabel collapsed={collapsed}>
+            <span className="text-[15px] font-semibold">collapse</span>
+          </RailLabel>
         </button>
 
         <div className="flex flex-col items-stretch gap-3.5 short:gap-2.5">

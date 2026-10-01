@@ -131,7 +131,7 @@ export function SettingsView() {
       <div
         role="radiogroup"
         aria-label="theme"
-        className="grid grid-cols-2 gap-3 py-3.5 sm:grid-cols-4"
+        className="grid grid-cols-2 gap-4 py-4 sm:grid-cols-4"
       >
         {THEMES.map((t) => {
           const active = mounted && theme === t.name;
@@ -141,51 +141,97 @@ export function SettingsView() {
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={t.name}
               onClick={() => {
                 if (!active) startThemeTransition(() => setTheme(t.name));
               }}
               className={cn(
-                "group flex flex-col gap-2.5 rounded-2xl p-2 text-left transition-colors",
+                // a miniature of the site in that theme: flat background,
+                // nav + rail islands, typing lines with the accent caret
+                "relative aspect-[16/11] overflow-hidden rounded-[1.25rem] text-left shadow-[0_10px_24px_-12px_rgba(0,0,0,0.55)] transition-transform duration-300 hover:-translate-y-1",
                 active
-                  ? "bg-glass-strong ring-2 ring-primary"
-                  : "ring-1 ring-glass-border hover:bg-glass-strong",
+                  ? "ring-[3px] ring-primary ring-offset-[3px] ring-offset-background"
+                  : "ring-1 ring-black/10",
               )}
+              style={{ backgroundColor: t.bg }}
             >
-              {/* a miniature of the typing surface in that theme */}
-              <span
-                aria-hidden
-                className="flex h-16 w-full flex-col justify-center gap-1.5 rounded-xl px-3 ring-1 ring-inset ring-black/10"
-                style={{ backgroundColor: t.bg }}
-              >
-                <span className="flex items-center gap-1">
+              <span aria-hidden className="absolute inset-0">
+                {/* nav island */}
+                <span
+                  className="absolute left-1/2 top-[9%] flex h-[13%] w-[56%] -translate-x-1/2 items-center gap-[6%] rounded-full px-[3%] shadow-[0_4px_10px_-4px_rgba(0,0,0,0.5)]"
+                  style={{ backgroundColor: t.surface }}
+                >
                   <span
-                    className="h-1.5 w-7 rounded-full"
-                    style={{ backgroundColor: t.fg }}
-                  />
-                  <span
-                    className="h-2.5 w-[2px] rounded-full"
+                    className="h-[56%] w-[26%] rounded-full"
                     style={{ backgroundColor: t.swatch }}
                   />
                   <span
-                    className="h-1.5 w-5 rounded-full opacity-30"
+                    className="h-[22%] w-[18%] rounded-full opacity-45"
+                    style={{ backgroundColor: t.onSurface }}
+                  />
+                  <span
+                    className="h-[22%] w-[18%] rounded-full opacity-45"
+                    style={{ backgroundColor: t.onSurface }}
+                  />
+                </span>
+                {/* rail island */}
+                <span
+                  className="absolute left-[5%] top-[30%] flex h-[46%] w-[9%] flex-col items-center gap-[12%] rounded-full pt-[3%] shadow-[0_4px_10px_-4px_rgba(0,0,0,0.5)]"
+                  style={{ backgroundColor: t.surface }}
+                >
+                  <span
+                    className="aspect-square w-[64%] rounded-full"
+                    style={{ backgroundColor: t.swatch }}
+                  />
+                  <span
+                    className="aspect-square w-[34%] rounded-full opacity-45"
+                    style={{ backgroundColor: t.onSurface }}
+                  />
+                  <span
+                    className="aspect-square w-[34%] rounded-full opacity-45"
+                    style={{ backgroundColor: t.onSurface }}
+                  />
+                </span>
+                {/* typing lines: typed, caret, pending */}
+                <span className="absolute left-[24%] right-[8%] top-[38%] flex flex-col gap-[0.4rem]">
+                  <span className="flex items-center gap-1">
+                    <span
+                      className="h-1.5 w-[34%] rounded-full"
+                      style={{ backgroundColor: t.fg }}
+                    />
+                    <span
+                      className="h-3 w-[2px] rounded-full"
+                      style={{ backgroundColor: t.swatch }}
+                    />
+                    <span
+                      className="h-1.5 flex-1 rounded-full opacity-35"
+                      style={{ backgroundColor: t.fg }}
+                    />
+                  </span>
+                  <span
+                    className="h-1.5 w-[86%] rounded-full opacity-35"
                     style={{ backgroundColor: t.fg }}
                   />
                 </span>
-                <span
-                  className="h-1.5 w-12 rounded-full opacity-30"
-                  style={{ backgroundColor: t.fg }}
-                />
               </span>
-              <span className="flex items-center justify-between px-1 pb-0.5">
-                <span
-                  className={cn(
-                    "text-sm font-semibold",
-                    active ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {t.name}
-                </span>
-                {active && <Check className="size-3.5 text-primary" />}
+              {/* name chip, island style */}
+              <span
+                className="absolute bottom-[8%] right-[5%] flex items-center gap-1.5 rounded-full py-1 pl-3 pr-2.5 text-[13px] font-bold shadow-[0_4px_10px_-4px_rgba(0,0,0,0.5)]"
+                style={{ backgroundColor: t.surface, color: t.onSurface }}
+              >
+                {t.name}
+                {active && (
+                  <span
+                    className="flex size-4 items-center justify-center rounded-full"
+                    style={{ backgroundColor: t.swatch }}
+                  >
+                    <Check
+                      className="size-3"
+                      strokeWidth={3.5}
+                      style={{ color: t.bg }}
+                    />
+                  </span>
+                )}
               </span>
             </button>
           );
@@ -221,7 +267,10 @@ export function SettingsView() {
     </Section>,
 
     <Section key="gaze" title="gaze & privacy">
-      <Row label="pause on peek" hint="freeze the test while you're looking down">
+      <Row
+        label="pause on peek"
+        hint="freeze the test while you're looking down"
+      >
         <Switch
           label="pause on peek"
           checked={settings.pauseOnPeek}
@@ -261,7 +310,10 @@ export function SettingsView() {
     </Section>,
 
     <Section key="data" title="your data">
-      <Row label="export history" hint="every run, personal best and streak as JSON">
+      <Row
+        label="export history"
+        hint="every run, personal best and streak as JSON"
+      >
         <GlassButton
           size="sm"
           icon={<Download />}
@@ -323,7 +375,11 @@ export function SettingsView() {
         >
           <Link
             href="/login"
-            className={buttonClasses({ variant: "primary", size: "sm", hasIcon: true })}
+            className={buttonClasses({
+              variant: "primary",
+              size: "sm",
+              hasIcon: true,
+            })}
           >
             <LogIn aria-hidden className="size-[1.1em]" />
             sign in
