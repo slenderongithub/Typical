@@ -3,11 +3,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CalibrationOverlay } from "@/components/gaze/CalibrationOverlay";
-import { CameraDock } from "@/components/gaze/CameraDock";
 import { ConsentModal } from "@/components/gaze/ConsentModal";
 import { GazeStatusPill } from "@/components/gaze/GazeStatusPill";
 import { GlassButton } from "@/components/glass";
@@ -41,6 +40,15 @@ import {
   type TestConfig,
 } from "@/lib/types";
 import { cn, uid } from "@/lib/utils";
+
+// camera-only surfaces: most visits never open them, so keep them out of the
+// test page's initial JS
+const CalibrationOverlay = dynamic(() =>
+  import("@/components/gaze/CalibrationOverlay").then((m) => m.CalibrationOverlay),
+);
+const CameraDock = dynamic(() =>
+  import("@/components/gaze/CameraDock").then((m) => m.CameraDock),
+);
 
 type Phase = "test" | "results";
 
