@@ -624,7 +624,7 @@ export function TestExperience() {
               {gaze.supported && (
                 <div
                   className={cn(
-                    "rail-counter -mt-6 flex flex-wrap items-center justify-center gap-2",
+                    "rail-counter -mt-6 short:mt-0 flex flex-wrap items-center justify-center gap-2",
                     testRunning && "pointer-events-none opacity-30",
                   )}
                 >
