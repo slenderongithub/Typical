@@ -41,7 +41,7 @@ interface RailOption {
 /** A short number or letter used in place of an icon. */
 function Glyph({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[13px] font-extrabold leading-none tabular-nums tracking-tight">
+    <span className="text-sm font-extrabold leading-none tabular-nums tracking-tight">
       {children}
     </span>
   );
@@ -85,9 +85,10 @@ const DIFFICULTIES: RailOption[] = [
 ];
 
 const ITEM =
-  // 1px transparent border on every item (toggles fill theirs) + 11px padding
-  // = exactly 48px wide collapsed, so a collapsed island is as thick as the nav
-  "relative flex h-12 w-full select-none items-center rounded-full border px-[11px] text-[15px] font-semibold transition-colors duration-200 railshort:h-10";
+  // 1px border on every item (transparent when idle) + 15px padding + 26px
+  // icon = 58px items → a 76px collapsed island; a tall narrow column reads
+  // thinner than a wide bar, so it's a touch thicker than the nav to match
+  "relative flex h-12 w-full select-none items-center rounded-full border px-[15px] text-[15px] font-semibold transition-colors duration-200 railshort:h-10";
 const ITEM_IDLE =
   "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground";
 
@@ -116,7 +117,7 @@ function RailIcon({ children }: { children: ReactNode }) {
   return (
     <span
       aria-hidden
-      className="relative flex size-6 shrink-0 items-center justify-center [&>svg]:size-[22px] [&>svg]:stroke-[2.1]"
+      className="relative flex size-[26px] shrink-0 items-center justify-center [&>svg]:size-6 [&>svg]:stroke-[2.1]"
     >
       {children}
     </span>
@@ -546,8 +547,8 @@ export function ConfigBar({
           }
           title={collapsed ? "expand" : "collapse"}
           // stretches to the islands' width: a pill, not a circle; its icon
-          // lines up with the item icons below (island p-2 + item px-3)
-          className="island flex h-14 w-full items-center rounded-full px-5 text-surface-foreground transition-transform active:scale-[0.97] railshort:h-12"
+          // lines up with the item icons below (island p-2 + border + item px-[15px])
+          className="island flex h-14 w-full items-center rounded-full px-6 text-surface-foreground transition-transform active:scale-[0.97] railshort:h-12"
         >
           <RailIcon>
             {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}

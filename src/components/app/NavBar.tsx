@@ -18,7 +18,7 @@ const LINKS = [
   { href: "/settings", label: "settings", icon: Settings2 },
 ] as const;
 
-/** The Typical mark. */
+/** The Typical mark (used on the sign-in card; the nav is wordmark-only). */
 export function LogoMark({ className }: { className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- tiny static asset, no optimisation needed
@@ -73,18 +73,17 @@ export function NavBar() {
       <nav
         ref={navRef}
         style={{ pointerEvents: testRunning ? "none" : "auto" }}
-        className="island flex max-w-full items-center gap-1 rounded-full p-1.5 sm:p-2 sm:pl-2.5"
+        className="island flex max-w-full items-center gap-0.5 rounded-full p-1.5 sm:gap-1 sm:p-2 sm:pl-2.5"
       >
         <Link
           href="/"
           aria-label="Typical — home"
           className={cn(
-            "flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-1 text-[19px] font-extrabold tracking-tight text-surface-foreground sm:pr-3.5",
+            "flex shrink-0 items-center rounded-full py-1 pl-2 pr-0.5 text-base font-extrabold max-[380px]:pl-1.5 max-[380px]:text-[15px] tracking-tight text-surface-foreground sm:pl-3.5 sm:pr-3 sm:text-[19px]",
             themeOpen && "hidden sm:flex",
           )}
         >
-          <LogoMark />
-          <span className="hidden sm:inline">Typical</span>
+          Typical
         </Link>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -111,7 +110,7 @@ export function NavBar() {
                     aria-current={active ? "page" : undefined}
                     aria-label={l.label}
                     className={cn(
-                      "relative flex h-10 items-center rounded-full px-2.5 text-base font-semibold transition-colors sm:h-12 sm:px-5",
+                      "relative flex h-10 items-center rounded-full px-2 text-base font-semibold transition-colors max-[380px]:px-1.5 sm:h-12 sm:px-5",
                       active
                         ? "text-primary-foreground"
                         : "text-surface-muted hover:text-surface-foreground",
@@ -160,7 +159,7 @@ export function NavBar() {
             <Link
               href="/login"
               className={cn(
-                "btn-primary flex h-10 items-center rounded-full px-3.5 text-sm font-semibold sm:h-12 sm:px-5 sm:text-base",
+                "btn-primary flex h-10 items-center rounded-full px-3.5 text-sm font-semibold max-[380px]:px-2.5 sm:h-12 sm:px-5 sm:text-base",
                 // phones: make room for the 8 theme swatches
                 themeOpen && "hidden sm:flex",
               )}
