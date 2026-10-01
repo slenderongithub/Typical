@@ -502,6 +502,12 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - Added a themed `src/app/not-found.tsx`; Next's default paints a white page. It must be `"use client"` because it calls `buttonClasses()` from a client module. As a server component it threw on every request and also stalled CSS HMR.
   - Dead code (unused since the initial commit, export-only): `GlassSurface.tsx`, `GooeyFilter.tsx`.
 
+- **Round 17: UI fixes + perf pass (2026-10-01):**
+  - Defaults: theme **dawn** (`Providers` defaultTheme + `DEFAULT_SETTINGS.theme`); config rail starts **collapsed** (`useState(true)`, localStorage `"0"` re-expands).
+  - **192,000 wpm zen bug:** `finish()` computed duration as `elapsed(lastEventTs)`, but `elapsed()` subtracts the *current* `pausedTotal` — a blur-pause opened after the last keystroke (e.g. taking a screenshot) then "end zen session" drove duration to 0. The engine now stores `lastEventElapsed` at input time. Local storage drops results/PBs above `MAX_HUMAN_WPM` (250, now exported from `lib/engine/stats.ts` and shared with server validation), which also heals already-poisoned local PBs.
+  - **Zen caret:** after a space the engine pointed `wordIndex` at a word that didn't exist yet, so WordStream fell back to the empty-stream position (centre). Zen now opens the next empty word on space; an empty `Word` renders a zero-width space so its inline-block isn't baseline-dropped (caret was half a line low). Empty zen shows the hint on line 1 with the caret at its start (placeholder-style).
+  - **Perf (measured at 4× CPU throttle, prod build):** live stats switched from NumberFlow to plain tabular digits — NumberFlow re-animated on every keystroke (always mid-roll, and its style recalcs were most of a keystroke's cost). Style recalc per key 16.4ms → 0.8ms, first keystroke JS 95 → 29ms, typing CPU 29% → 10%, mid-test idle 8–23% → 1.6%. `CalibrationOverlay`/`CameraDock` are `next/dynamic`. Remaining JS per route (~284KB compressed) is mostly Next/React; framer-motion `LazyMotion` (~20–30KB) is the only sizable cut left and would touch every motion component. /stats with 1000 runs: ~260ms long tasks at load (throttled), fine.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,
