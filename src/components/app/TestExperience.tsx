@@ -76,7 +76,7 @@ export function TestExperience() {
   // render hydrate identically — the persisted default is applied on mount
   // below. Reading the persisted store here would mismatch the SSR'd config bar.
   const [config, setConfig] = useState<TestConfig>(DEFAULT_CONFIG);
-  const [railCollapsed, setRailCollapsed] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(true);
   const [seed, setSeed] = useState<number>(() => randomSeed());
   const [engine, setEngine] = useState<TypingEngine | null>(null);
   const [phase, setPhase] = useState<Phase>("test");
@@ -562,7 +562,7 @@ export function TestExperience() {
       stored = localStorage.getItem(RAIL_KEY);
     } catch {}
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read client-only preference after hydration
-    setRailCollapsed(stored ? stored === "1" : window.innerWidth < 1280);
+    setRailCollapsed(stored !== "0"); // collapsed unless the user expanded it
   }, []);
 
   const onRailCollapsed = useCallback((v: boolean) => {
