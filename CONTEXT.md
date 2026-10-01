@@ -496,7 +496,7 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - Leaderboard filter pills are `fullWidth w-auto flex-auto`, so together they span the table width.
   - The `--island-accent` token (`text-island-accent`) is the icon colour on islands. It defaults to `--primary`; pigeon overrides it with dark ink because lime vanishes on almond.
   - On phones the nav controls shrink (h-10 instead of h-12). With the theme row open, the logo and sign-in/avatar hide so 8 swatches fit. They used to overlap, which made the palette button untappable.
-  - The rail is centred below the nav (`top-[calc(50%+2.75rem)]`) with its own `railshort:` variant (max-height 940px). `short:` stays at 860px for page padding and results.
+  - The rail is centred on the full viewport at xl+, where the nav clears it, so its top and bottom gaps are equal. Narrower screens centre it below the nav: `top-[calc(50%+33px)] sm:top-[calc(50%+41px)]`, where 33/41px is half the nav's bottom edge. It has its own `railshort:` variant (max-height 940px). Every rail item has a 1px border (transparent when idle) + `px-[11px]`, so collapsed islands are exactly as thick as the nav (66px). `short:` stays at 860px for page padding and results.
   - Toasts always sit at top-24, below the nav.
   - The leaderboard AutoHeight bleed is `-mx-4 -my-12`; `-m-12` caused a horizontal scroll on phones.
   - Added a themed `src/app/not-found.tsx`; Next's default paints a white page. It must be `"use client"` because it calls `buttonClasses()` from a client module. As a server component it threw on every request and also stalled CSS HMR.

@@ -85,9 +85,11 @@ const DIFFICULTIES: RailOption[] = [
 ];
 
 const ITEM =
-  "relative flex h-11 w-full select-none items-center rounded-full px-3 text-[15px] font-semibold transition-colors duration-200 railshort:h-10";
+  // 1px transparent border on every item (toggles fill theirs) + 11px padding
+  // = exactly 48px wide collapsed, so a collapsed island is as thick as the nav
+  "relative flex h-12 w-full select-none items-center rounded-full border px-[11px] text-[15px] font-semibold transition-colors duration-200 railshort:h-10";
 const ITEM_IDLE =
-  "text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground";
+  "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground";
 
 /** Label that slides shut when the rail collapses, leaving only the icon. */
 function RailLabel({
@@ -176,7 +178,11 @@ function RailGroup({
             title={o.title ?? o.aria ?? o.label}
             tabIndex={active || (!hasActive && i === 0) ? 0 : -1}
             onClick={() => onChange(o.value)}
-            className={cn(ITEM, active ? "text-primary-foreground" : ITEM_IDLE)}
+            className={cn(
+              ITEM,
+              // the sliding chip is a separate span, so the button edge stays clear
+              active ? "border-transparent text-primary-foreground" : ITEM_IDLE,
+            )}
           >
             {active && (
               <motion.span
@@ -217,10 +223,7 @@ function RailToggle({
       onClick={onClick}
       className={cn(
         ITEM,
-        "border",
-        active
-          ? "glass-chip text-primary-foreground"
-          : cn("border-transparent", ITEM_IDLE),
+        active ? "glass-chip text-primary-foreground" : ITEM_IDLE,
       )}
     >
       <RailIcon>{icon}</RailIcon>
@@ -268,10 +271,7 @@ function CustomValue({
         title={`custom ${unit}`}
         className={cn(
           ITEM,
-          "border",
-          active
-            ? "glass-chip text-primary-foreground"
-            : cn("border-transparent", ITEM_IDLE),
+          active ? "glass-chip text-primary-foreground" : ITEM_IDLE,
         )}
       >
         <RailIcon>
@@ -531,7 +531,9 @@ export function ConfigBar({
         ref={railRef}
         aria-label="test settings"
         className={cn(
-          "fixed left-4 top-[calc(50%+2.75rem)] z-30 flex -translate-y-1/2 flex-col items-stretch gap-3.5 transition-opacity duration-300 sm:left-8 railshort:gap-2.5",
+          // centred in the space below the nav where the nav could overlap it,
+          // and on the full viewport once the nav is clear of it (xl+)
+          "fixed left-4 top-[calc(50%+33px)] z-30 flex -translate-y-1/2 flex-col items-stretch sm:top-[calc(50%+41px)] xl:top-1/2 gap-3.5 transition-opacity duration-300 sm:left-8 railshort:gap-2.5",
           disabled && "pointer-events-none opacity-25",
         )}
       >
@@ -547,7 +549,9 @@ export function ConfigBar({
           // lines up with the item icons below (island p-2 + item px-3)
           className="island flex h-14 w-full items-center rounded-full px-5 text-surface-foreground transition-transform active:scale-[0.97] railshort:h-12"
         >
-          <RailIcon>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</RailIcon>
+          <RailIcon>
+            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+          </RailIcon>
           <RailLabel collapsed={collapsed}>
             <span className="text-[15px] font-semibold">collapse</span>
           </RailLabel>
