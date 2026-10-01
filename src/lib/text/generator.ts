@@ -9,6 +9,14 @@ import type { Quote, TestConfig } from "@/lib/types";
 import { QUOTES } from "./quotes";
 import { COMMON_WORDS } from "./words";
 
+/**
+ * Lean word picks toward the frequent end of COMMON_WORDS (it's frequency-
+ * ordered): index = N · r^EASE. 1 = uniform; 1.5 is "a bit easier" — avg word
+ * length 5.26 → 4.92, 7+ letter words 21% → 17%, 40% (vs 25%) from the top
+ * 200 — while every word stays reachable.
+ */
+const EASE = 1.5;
+
 const SENTENCE_MIN = 6;
 const SENTENCE_MAX = 14;
 const TERMINALS = [".", ".", ".", ".", "?", "!"];
@@ -109,7 +117,7 @@ export function generateWords(
       prev = "";
       continue;
     }
-    const w = COMMON_WORDS[Math.floor(rng() * COMMON_WORDS.length)];
+    const w = COMMON_WORDS[Math.floor(rng() ** EASE * COMMON_WORDS.length)];
     if (w === prev) continue; // no immediate repeats
     words.push(w);
     prev = w;
