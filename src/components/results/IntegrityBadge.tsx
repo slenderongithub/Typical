@@ -1,8 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, Info, VideoOff } from "lucide-react";
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { Eye, EyeOff, VideoOff } from "lucide-react";
 
 import type { SavedResult } from "@/lib/types";
 
@@ -18,8 +16,6 @@ export interface IntegrityBadgeProps {
  * the badge; assisted runs get honest numbers; untracked runs are just that.
  */
 export function IntegrityBadge({ report }: IntegrityBadgeProps) {
-  const [tip, setTip] = useState(false);
-
   const meta =
     report.integrity === "clean"
       ? {
@@ -38,48 +34,20 @@ export function IntegrityBadge({ report }: IntegrityBadgeProps) {
         : {
             icon: <VideoOff className="size-4" />,
             tone: "text-muted-foreground",
-            label: "untracked — camera was off",
+            label: "untracked",
           };
 
   return (
-    <div className="relative inline-flex items-center gap-2">
-      <span
-        className={`glass inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] font-medium ${meta.tone}`}
-      >
-        {meta.icon}
-        {meta.label}
-        {report.trackingLostMs > 1500 && report.integrity !== "untracked" && (
-          <span className="text-xs text-faint-foreground">
-            · tracking lost {(report.trackingLostMs / 1000).toFixed(1)}s
-          </span>
-        )}
-      </span>
-      <button
-        type="button"
-        aria-label="how gaze verification works"
-        className="flex size-7 items-center justify-center rounded-full text-faint-foreground transition-colors hover:bg-glass-strong hover:text-muted-foreground"
-        onMouseEnter={() => setTip(true)}
-        onMouseLeave={() => setTip(false)}
-        onFocus={() => setTip(true)}
-        onBlur={() => setTip(false)}
-      >
-        <Info className="size-3.5" />
-      </button>
-      <AnimatePresence>
-        {tip && (
-          <motion.span
-            role="tooltip"
-            initial={{ opacity: 0, y: 4, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: 4, x: "-50%" }}
-            className="popover pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-64 rounded-xl p-3 text-left text-xs leading-relaxed text-muted-foreground"
-          >
-            Verified with on-device head-pose and eye-state heuristics — an
-            honest estimate of sustained keyboard glances, not pixel-perfect
-            gaze tracking. Video never leaves your browser.
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </div>
+    <span
+      className={`glass inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] font-medium ${meta.tone}`}
+    >
+      {meta.icon}
+      {meta.label}
+      {report.trackingLostMs > 1500 && report.integrity !== "untracked" && (
+        <span className="text-xs text-faint-foreground">
+          · tracking lost {(report.trackingLostMs / 1000).toFixed(1)}s
+        </span>
+      )}
+    </span>
   );
 }
