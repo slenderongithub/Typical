@@ -20,19 +20,22 @@ import {
   DOWN_DEBOUNCE_MS,
   DOWN_ENTER_SCORE,
   DOWN_EXIT_SCORE,
+  DRIFT_UPDATE_BELOW,
   gazeFeatures,
   keyboardProbability,
   LOST_DEBOUNCE_MS,
   MIN_CONFIDENCE,
-  trainGaze,
+  smooth,
   UP_DEBOUNCE_MS,
+  updateDrift,
 } from "./heuristics";
 
 export type GazeEvent =
   | { type: "status"; status: GazeStatusKind }
   | { type: "peek-start"; at: number }
   | { type: "peek-end"; at: number; durationMs: number }
-  | { type: "frame"; frame: GazeFrameResult };
+  /** score = smoothed P(keyboard), null until calibrated */
+  | { type: "frame"; frame: GazeFrameResult; score: number | null };
 
 const FRAME_INTERVAL_MS = 80; // ~12.5fps — plenty for head pose, easy on battery
 const WORKER_INIT_TIMEOUT_MS = 20000;
@@ -56,10 +59,8 @@ export class GazeController {
   private peeking = false;
   private peekStartTs = 0;
 
-  // calibration dataset: feature rows + labels (0 = screen, 1 = keyboard)
-  private calX: number[][] = [];
-  private calY: number[] = [];
-  private collectingLabel: 0 | 1 | null = null;
+  /** posture correction since calibration — see updateDrift */
+  private drift: number[] = [];
 
   // integrity session
   private sessionActive = false;
@@ -86,7 +87,8 @@ export class GazeController {
     this.setStatus("initializing");
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: "user" },
+        // 720p: MediaPipe crops the face, so more pixels = steadier eye landmarks
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
         audio: false,
       });
     } catch (err) {
@@ -165,34 +167,10 @@ export class GazeController {
 
   /* ── calibration ────────────────────────────────────────────────── */
 
-  /** Drop any frames from an earlier (possibly cancelled) calibration. */
-  resetCalibration(): void {
-    this.calX = [];
-    this.calY = [];
-    this.collectingLabel = null;
-  }
-
-  /** Record labelled frames for `ms` while the user holds a target. */
-  collectCalibration(label: 0 | 1, ms: number): Promise<void> {
-    this.collectingLabel = label;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this.collectingLabel = null;
-        resolve();
-      }, ms);
-    });
-  }
-
-  /** Train the per-user classifier; only a valid fit replaces the current one. */
-  finishCalibration(): CalibrationData {
-    const data = trainGaze(this.calX, this.calY);
-    this.resetCalibration();
-    if (data.valid) this.setCalibration(data);
-    return data;
-  }
-
   setCalibration(c: CalibrationData): void {
     this.calibration = c;
+    this.drift = c.weights.map(() => 0);
+    this.score = 0;
     if (this.status === "uncertain" && this.stream) this.setStatus("ok");
   }
 
@@ -335,11 +313,6 @@ export class GazeController {
     this.lastFrame = frame;
     const now = performance.now();
 
-    if (this.collectingLabel !== null && frame.faces === 1) {
-      this.calX.push(gazeFeatures(frame));
-      this.calY.push(this.collectingLabel);
-    }
-
     const tracked = frame.faces > 0 && frame.confidence >= MIN_CONFIDENCE;
 
     if (!tracked) {
@@ -352,7 +325,7 @@ export class GazeController {
         }
         this.setStatus("lost");
       }
-      this.emit({ type: "frame", frame });
+      this.emit({ type: "frame", frame, score: null });
       return;
     }
 
@@ -367,17 +340,21 @@ export class GazeController {
 
     if (frame.faces > 1) {
       this.setStatus("multiple");
-      this.emit({ type: "frame", frame });
+      this.emit({ type: "frame", frame, score: null });
       return;
     }
 
     if (!this.calibration || !this.calibration.valid) {
       this.setStatus("uncertain");
-      this.emit({ type: "frame", frame });
+      this.emit({ type: "frame", frame, score: null });
       return;
     }
 
-    this.score = keyboardProbability(frame, this.calibration);
+    const f = gazeFeatures(frame);
+    this.score = smooth(this.score, keyboardProbability(f, this.calibration, this.drift));
+    if (this.score < DRIFT_UPDATE_BELOW) {
+      this.drift = updateDrift(this.drift, f, this.calibration);
+    }
 
     if (this.score >= DOWN_ENTER_SCORE) {
       this.upSince = 0;
@@ -413,7 +390,7 @@ export class GazeController {
       else this.upSince = 0;
     }
 
-    this.emit({ type: "frame", frame });
+    this.emit({ type: "frame", frame, score: this.score });
   }
 
   private endPeek(endTs: number): void {

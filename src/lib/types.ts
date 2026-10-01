@@ -156,6 +156,9 @@ export interface GazeFrameResult {
   lookDownR: number;
   lookUpL: number;
   lookUpR: number;
+  /** lid gap ÷ eye width per eye — lids drop as the eyes look down */
+  openL: number;
+  openR: number;
   /** 0–1 face presence confidence */
   confidence: number;
 }
@@ -182,6 +185,8 @@ export interface CalibrationData {
   /** per-feature standardization fitted on the calibration frames */
   mean: number[];
   scale: number[];
+  /** mean features of the on-screen frames — the posture-drift reference */
+  screenMean: number[];
   /** enough frames of both classes were collected */
   valid: boolean;
 }

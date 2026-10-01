@@ -32,7 +32,6 @@ import { generateWords } from "@/lib/text/generator";
 import {
   configKey,
   DEFAULT_CONFIG,
-  type CalibrationData,
   type EngineResult,
   type IntegrityReport,
   type PersonalBest,
@@ -536,16 +535,9 @@ export function TestExperience() {
     }
   }, [gaze.consented, gaze.cameraOn, startCamera, stopCamera]);
 
-  const onCalibrated = useCallback((data: CalibrationData) => {
+  // the overlay has already installed a calibration that passed its drill
+  const onCalibrated = useCallback(() => {
     setCalibrating(false);
-    // a failed fit keeps whatever calibration was there before
-    if (!data.valid) {
-      toast("calibration failed — keep your face in view and try again");
-      return;
-    }
-    try {
-      getController().setCalibration(data);
-    } catch {}
     useGazeStore.getState().setCalibrated(true);
   }, []);
 

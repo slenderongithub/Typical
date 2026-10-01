@@ -1,95 +1,191 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { ArrowDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { GlassButton } from "@/components/glass";
+import {
+  type CalSample,
+  type CalStepKind,
+  fitCalibration,
+  gazeFeatures,
+} from "@/lib/gaze/heuristics";
 import { getController } from "@/lib/gaze/store";
 import type { CalibrationData } from "@/lib/types";
 
-const RING_R = 26;
-const RING_C = 2 * Math.PI * RING_R;
-
-const EDGE = "3.5rem";
-const BOTTOM = `calc(100% - ${EDGE})`;
-
 /**
- * Calibration targets. Screen dots (label 0) hug the bottom edge, where
- * screen-vs-keyboard is hardest to tell apart; the keyboard step (label 1)
- * has no dot to watch, so it gets time to read the prompt first.
- * settle = ms before sampling, hold = ms of labelled frames.
+ * Screen sweep path as [top, left] — corners, sides, the typing band, and the
+ * bottom edge (where screen vs keyboard is hardest to tell apart) twice.
  */
-const STEPS = [
-  { label: 0, top: "50%", left: "50%", settle: 650, hold: 1200, title: "look at the dot", hint: "keep your head relaxed" },
-  { label: 0, top: BOTTOM, left: EDGE, settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
-  { label: 0, top: BOTTOM, left: "50%", settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
-  { label: 0, top: BOTTOM, left: `calc(100% - ${EDGE})`, settle: 650, hold: 1000, title: "follow the dot", hint: "eyes only is fine" },
-  { label: 1, top: BOTTOM, left: "50%", settle: 2000, hold: 2400, title: "now look at your keyboard", hint: "eyes on the keys for about five seconds, then look back up" },
-] as const;
+const SWEEP: [string, string][] = [
+  ["50%", "50%"],
+  ["8%", "5%"],
+  ["8%", "95%"],
+  ["50%", "95%"],
+  ["92%", "95%"],
+  ["92%", "5%"],
+  ["50%", "5%"],
+  ["40%", "50%"],
+  ["92%", "50%"],
+  ["92%", "25%"],
+  ["92%", "75%"],
+];
+const SWEEP_MS = 11000;
+const KEYS_MS = 8500;
+/** time to read the keyboard prompt and look down before frames count */
+const KEYS_READ_MS = 2500;
+const TYPE_MS = 10000;
+const GLANCES = 4;
+const GLANCE_MS = 2000;
+/** eyes still travelling after a cue / beep — frames in these windows are unlabelled */
+const GLANCE_SETTLE_MS = 600;
+const RETURN_SETTLE_MS = 800;
 
-type Step = "intro" | "done" | number;
+const ORDER: CalStepKind[] = ["sweep", "keys", "type", "drill"];
 
-const COPY = {
-  intro: { title: "quick calibration", hint: "a few dots, then your keyboard — about ten seconds" },
+const SENTENCE = "pack my box with five dozen liquor jugs";
+
+const COPY: Record<CalStepKind | "intro" | "done" | "failed", { title: string; hint: string }> = {
+  intro: { title: "calibration", hint: "about 45 seconds — sound on, sit how you type" },
+  sweep: { title: "follow the dot", hint: "eyes only is fine" },
+  keys: { title: "look at your keyboard", hint: "scan slowly from left to right until the beep" },
+  type: { title: "type this without looking down", hint: "eyes on the line" },
+  drill: { title: "watch the cross", hint: "arrow → glance at your keys · beep → look back up" },
   done: { title: "calibrated", hint: "glances toward your keyboard will now count against you" },
+  failed: { title: "calibration unclear", hint: "" },
 };
 
+/** Drill cue times (ms into the step), randomized so glances can't be anticipated. */
+function drillCues(): number[] {
+  const cues = [1500];
+  while (cues.length < GLANCES) {
+    cues.push(cues[cues.length - 1] + GLANCE_MS + 1800 + Math.random() * 1200);
+  }
+  return cues;
+}
+
+/** Label for a frame `t` ms into a step, or null while the eyes are moving. */
+function labelAt(
+  kind: CalStepKind,
+  t: number,
+  ms: number,
+  cues: number[],
+): { label: 0 | 1; glance: number } | null {
+  if (kind === "sweep") return t >= 600 ? { label: 0, glance: -1 } : null;
+  if (kind === "keys") return t >= KEYS_READ_MS && t <= ms - 200 ? { label: 1, glance: -1 } : null;
+  if (kind === "type") return t >= 1000 ? { label: 0, glance: -1 } : null;
+  if (t < 500) return null;
+  for (let g = 0; g < cues.length; g++) {
+    const c = cues[g];
+    if (t >= c && t < c + GLANCE_SETTLE_MS) return null;
+    if (t >= c + GLANCE_SETTLE_MS && t <= c + GLANCE_MS) return { label: 1, glance: g };
+    if (t > c + GLANCE_MS && t < c + GLANCE_MS + RETURN_SETTLE_MS) return null;
+  }
+  return { label: 0, glance: -1 };
+}
+
+export function beep(ctx: AudioContext | null) {
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.frequency.value = 880;
+  gain.gain.value = 0.1;
+  osc.connect(gain).connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.15);
+}
+
 export interface CalibrationOverlayProps {
+  /** called only with a calibration that passed its own glance drill */
   onDone: (data: CalibrationData) => void;
   onCancel: () => void;
 }
 
+type Phase = "intro" | "run" | "done" | "failed";
+
 /**
- * Labelled-frame calibration: screen dots, then the keyboard. The controller
- * trains a per-user classifier on the frames when the last step finishes.
- * The dot carries an animated progress ring while frames are recorded.
+ * ~45s labelled calibration: a screen sweep, a keyboard sweep, typing with
+ * eyes up, then a randomized glance drill. The first three train the model;
+ * the drill tests it (see fitCalibration) before it is trusted.
  */
 export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps) {
-  const reduce = useReducedMotion();
-  const [step, setStep] = useState<Step>("intro");
-  const [collecting, setCollecting] = useState(false);
-  const cancelled = useRef(false);
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [stepIdx, setStepIdx] = useState(0);
+  const [cueOn, setCueOn] = useState(false);
+  const [problem, setProblem] = useState("");
+  const audio = useRef<AudioContext | null>(null);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
-    cancelled.current = false;
-    return () => {
-      cancelled.current = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof step !== "number") return;
-    const target = STEPS[step];
+    if (phase !== "run") return;
+    const c = getController();
+    const samples: CalSample[] = [];
+    const step = { kind: "sweep" as CalStepKind, start: 0, ms: 0, cues: [] as number[] };
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
     let alive = true;
+
+    const off = c.on((e) => {
+      if (e.type !== "frame" || e.frame.faces !== 1 || step.start === 0) return;
+      const l = labelAt(step.kind, e.frame.timestamp - step.start, step.ms, step.cues);
+      if (l) samples.push({ f: gazeFeatures(e.frame), kind: step.kind, ts: e.frame.timestamp, ...l });
+    });
+
     const run = async () => {
-      // let the dot's spring travel settle (or the prompt be read) first
-      await new Promise((r) => setTimeout(r, target.settle));
-      if (!alive || cancelled.current) return;
-      setCollecting(true);
-      await getController().collectCalibration(target.label, target.hold);
-      if (!alive || cancelled.current) return;
-      setCollecting(false);
-      if (step + 1 < STEPS.length) {
-        setStep(step + 1);
-      } else {
-        setStep("done");
-        const data = getController().finishCalibration();
-        setTimeout(() => {
-          if (!cancelled.current) onDone(data);
-        }, 900);
+      for (let i = 0; i < ORDER.length; i++) {
+        const kind = ORDER[i];
+        const cues = kind === "drill" ? drillCues() : [];
+        const ms =
+          kind === "sweep" ? SWEEP_MS
+          : kind === "keys" ? KEYS_MS
+          : kind === "type" ? TYPE_MS
+          : cues[cues.length - 1] + GLANCE_MS + 1500;
+        Object.assign(step, { kind, start: performance.now(), ms, cues });
+        setStepIdx(i);
+        for (const cue of cues) {
+          later(cue, () => setCueOn(true));
+          later(cue + GLANCE_MS, () => {
+            setCueOn(false);
+            beep(audio.current);
+          });
+        }
+        if (kind === "keys") later(ms, () => beep(audio.current));
+        await new Promise((r) => later(ms, () => r(null)));
+        if (!alive) return;
       }
+      step.start = 0;
+      const { cal, problem } = fitCalibration(samples);
+      if (problem) {
+        setProblem(problem);
+        setPhase("failed");
+        return;
+      }
+      getController().setCalibration(cal);
+      setPhase("done");
+      later(900, () => onDoneRef.current(cal));
     };
     void run();
+
     return () => {
       alive = false;
+      off();
+      timers.forEach(clearTimeout);
     };
-  }, [step, onDone]);
+  }, [phase]);
 
-  const current = typeof step === "number" ? STEPS[step] : null;
-  const copy = current ?? COPY[step as "intro" | "done"];
-  const dotPos = current
-    ? { top: current.top, left: current.left }
-    : { top: BOTTOM, left: "50%" };
+  const start = () => {
+    audio.current ??= new AudioContext(); // must be created inside the click
+    setCueOn(false);
+    setPhase("run");
+  };
+
+  const kind = ORDER[stepIdx];
+  const copy =
+    phase === "run" ? COPY[kind] : { ...COPY[phase], ...(phase === "failed" && { hint: problem }) };
 
   return (
     <motion.div
@@ -101,113 +197,75 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
       aria-modal="true"
       aria-label="gaze calibration"
     >
+      {phase === "run" && (
+        <span className="eyebrow absolute left-1/2 top-6 -translate-x-1/2">
+          step {stepIdx + 1} of {ORDER.length}
+        </span>
+      )}
+
       {/* copy block */}
       <motion.div
-        key={step}
+        key={phase === "run" ? kind : phase}
         className="pointer-events-none absolute top-[22%] flex flex-col items-center gap-2 px-6 text-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
       >
-        <h2 className="text-2xl font-bold text-foreground">
-          {copy.title}
-        </h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {copy.hint}
-        </p>
+        <h2 className="text-2xl font-bold text-foreground">{copy.title}</h2>
+        <p className="max-w-md text-sm text-muted-foreground">{copy.hint}</p>
       </motion.div>
 
-      {step === "intro" && (
-        <motion.div
-          className="flex items-center gap-2"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
+      {(phase === "intro" || phase === "failed") && (
+        <div className="flex items-center gap-2">
           <GlassButton variant="ghost" onClick={onCancel}>
             cancel
           </GlassButton>
-          <GlassButton
-            variant="primary"
-            onClick={() => {
-              getController().resetCalibration();
-              setStep(0);
-            }}
-          >
-            start
+          <GlassButton variant="primary" onClick={start}>
+            {phase === "failed" ? "try again" : "start"}
           </GlassButton>
-        </motion.div>
+        </div>
       )}
 
-      {step !== "intro" && (
-        <motion.div
-          className="absolute -translate-x-1/2 -translate-y-1/2"
-          animate={dotPos}
-          transition={
-            reduce
-              ? { duration: 0 }
-              : { type: "spring", stiffness: 160, damping: 22 }
-          }
-          style={{ top: "50%", left: "50%" }}
-        >
-          <svg width={72} height={72} viewBox="0 0 72 72" aria-hidden>
-            {/* idle pulse halo */}
-            <motion.circle
-              cx={36}
-              cy={36}
-              r={RING_R}
-              fill="none"
-              stroke="var(--primary)"
-              strokeOpacity={0.25}
-              strokeWidth={2}
-              animate={reduce ? undefined : { r: [RING_R, RING_R + 7], opacity: [0.4, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-            />
-            {/* progress ring while collecting */}
-            <motion.circle
-              cx={36}
-              cy={36}
-              r={RING_R}
-              fill="none"
-              stroke="var(--primary)"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeDasharray={RING_C}
-              transform="rotate(-90 36 36)"
-              initial={{ strokeDashoffset: RING_C }}
-              animate={{
-                strokeDashoffset: collecting || step === "done" ? 0 : RING_C,
-              }}
-              transition={{
-                duration: collecting && current ? current.hold / 1000 : 0.3,
-                ease: "linear",
-              }}
-            />
-            <motion.circle
-              cx={36}
-              cy={36}
-              r={9}
-              fill="var(--primary)"
-              animate={
-                step === "done"
-                  ? { scale: [1, 1.35, 1] }
-                  : reduce
-                    ? undefined
-                    : { scale: [1, 1.12, 1] }
-              }
-              transition={
-                step === "done"
-                  ? { duration: 0.5 }
-                  : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-              }
-              style={{ originX: "36px", originY: "36px" }}
-            />
-          </svg>
-        </motion.div>
+      {phase === "run" && kind === "sweep" && (
+        <motion.span
+          className="absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_6px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
+          initial={{ top: SWEEP[0][0], left: SWEEP[0][1] }}
+          animate={{ top: SWEEP.map((p) => p[0]), left: SWEEP.map((p) => p[1]) }}
+          transition={{ duration: SWEEP_MS / 1000, ease: "linear" }}
+        />
       )}
 
-      {step !== "intro" && step !== "done" && (
-        <div className="absolute bottom-20">
+      {phase === "run" && kind === "type" && (
+        <div className="mt-16 flex w-full max-w-xl flex-col items-center gap-4 px-6">
+          <p className="text-center text-2xl font-semibold text-foreground">{SENTENCE}</p>
+          <input
+            autoFocus
+            aria-label="type the sentence"
+            className="w-full rounded-xl border border-border bg-transparent px-4 py-3 text-lg text-foreground outline-none"
+          />
+        </div>
+      )}
+
+      {phase === "run" && kind === "drill" && (
+        <span className="flex size-20 items-center justify-center text-primary" aria-live="polite">
+          {cueOn ? (
+            <ArrowDown className="size-16" aria-label="glance at your keys" />
+          ) : (
+            <span className="text-5xl font-light leading-none text-foreground">+</span>
+          )}
+        </span>
+      )}
+
+      {phase === "done" && (
+        <motion.span
+          className="size-5 rounded-full bg-primary"
+          animate={{ scale: [1, 1.35, 1] }}
+          transition={{ duration: 0.5 }}
+        />
+      )}
+
+      {phase === "run" && (
+        <div className="absolute right-6 top-6">
           <GlassButton variant="ghost" size="sm" onClick={onCancel}>
             cancel
           </GlassButton>

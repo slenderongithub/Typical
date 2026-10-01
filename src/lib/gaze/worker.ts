@@ -103,6 +103,29 @@ function blend(categories: Category[] | undefined, name: string): number {
   return categories?.find((c) => c.categoryName === name)?.score ?? 0;
 }
 
+/** Pixel-space point for a landmark — keeps the eye geometry isotropic. */
+const px = (lm: NormalizedLandmark[], i: number, w: number, h: number) => ({
+  x: lm[i].x * w,
+  y: lm[i].y * h,
+});
+
+/** Lid gap (upper → lower lid) ÷ eye width (corner → corner). */
+function eyeOpen(
+  lm: NormalizedLandmark[],
+  cornerA: number,
+  cornerB: number,
+  upper: number,
+  lower: number,
+  w: number,
+  h: number,
+): number {
+  const a = px(lm, cornerA, w, h);
+  const b = px(lm, cornerB, w, h);
+  const u = px(lm, upper, w, h);
+  const l = px(lm, lower, w, h);
+  return Math.hypot(u.x - l.x, u.y - l.y) / (Math.hypot(b.x - a.x, b.y - a.y) || 1);
+}
+
 /**
  * How far the iris centre sits below the line through the eye's two corners,
  * in eye-widths. Corners are fixed to the skull, so this isolates eye
@@ -117,7 +140,7 @@ function irisDown(
   w: number,
   h: number,
 ): number {
-  const p = (i: number) => ({ x: lm[i].x * w, y: lm[i].y * h });
+  const p = (i: number) => px(lm, i, w, h);
   let a = p(cornerA);
   let b = p(cornerB);
   if (b.x < a.x) [a, b] = [b, a];
@@ -178,6 +201,9 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     lookDownR: blend(categories, "eyeLookDownRight"),
     lookUpL: blend(categories, "eyeLookUpLeft"),
     lookUpR: blend(categories, "eyeLookUpRight"),
+    // lid landmarks: 386/374 (subject's left), 159/145 (right)
+    openL: lm ? eyeOpen(lm, 362, 263, 386, 374, width, height) : 0,
+    openR: lm ? eyeOpen(lm, 33, 133, 159, 145, width, height) : 0,
     confidence: faces > 0 ? 1 : 0,
   });
 }
