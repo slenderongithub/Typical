@@ -541,22 +541,15 @@ body {
 }
 
 /* ── Test column beside the config rail ─────────────────────────────
-   TestExperience writes the rail's live right edge into --rail-right; the
-   column pads by it and centres its content in the space that's left. The
-   transition smooths both the per-frame updates while the rail's labels
-   animate and the jump when the rail appears/disappears. */
+   TestExperience writes the rail's live right edge into --rail-right. The
+   column pads BOTH sides by it, so its content clears the rail yet stays
+   centred on the viewport, under the nav. The transition smooths the
+   per-frame updates while the rail's labels animate and the jump when the
+   rail appears/disappears. */
 .rail-aware {
   --rail-pad: max(0px, calc(var(--rail-right, 0px) + 0.5rem));
-  padding-left: var(--rail-pad);
-  transition: padding-left 0.5s var(--expo-out);
-}
-/* keeps an element centred on the viewport (e.g. under the nav) while the
-   column around it shifts right by --rail-pad, i.e. its centre by half */
-.rail-counter {
-  transform: translateX(calc(var(--rail-pad) / -2));
-  transition:
-    transform 0.5s var(--expo-out),
-    opacity 0.3s ease;
+  padding-inline: var(--rail-pad);
+  transition: padding 0.5s var(--expo-out);
 }
 
 /* ── Typing surface ────────────────────────────────────────────────── */
