@@ -1,5 +1,8 @@
 /** Pure stat math shared by the engine and server-side validation. */
 
+/** Above this a result is a bug or a bot — the server rejects it, local history ignores it. */
+export const MAX_HUMAN_WPM = 250;
+
 /** Standard net/raw formula: 5 chars = 1 word. */
 export function wpmFromChars(chars: number, ms: number): number {
   if (ms <= 0 || chars <= 0) return 0;

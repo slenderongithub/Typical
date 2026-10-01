@@ -54,6 +54,9 @@ const Word = memo(
         </span>,
       );
     }
+    // an empty inline-block drops to the baseline, putting the caret half a
+    // line low — a zero-width space gives it a real line box (zen's open word)
+    if (len === 0) chars.push(<span key="zw">{"​"}</span>);
     return (
       <span
         ref={register}
@@ -114,15 +117,15 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
 
     const wordEl = wordEls.current.get(snapshot.currentWordIndex);
     if (!wordEl) {
-      // Nothing typed yet (zen): no word element exists, so park the caret at
-      // the centre of the first line — exactly where the first typed
-      // character will appear (the last line is text-align-last: centred).
+      // Nothing typed yet (zen): park the caret at the start of the hint on
+      // the first line, like a placeholder in a text field — the first typed
+      // character replaces the hint on that same line.
       const inner = innerRef.current;
       const ph = placeholderRef.current;
       if (!inner) return;
       const fs = parseFloat(getComputedStyle(inner).fontSize) || 24;
-      const y0 = (ph?.offsetTop ?? 0) + (lineHeightPx.current - fs * 1.35) / 2;
-      const x0 = inner.clientWidth / 2;
+      const y0 = (lineHeightPx.current - fs * 1.35) / 2;
+      const x0 = ph ? ph.offsetLeft : inner.clientWidth / 2;
       caretX.jump(x0);
       caretY.jump(y0);
       caretXRaw.set(x0);
@@ -241,11 +244,9 @@ export function WordStream({ engine, focused, onRequestFocus }: WordStreamProps)
           style={{ y: scrollY, textAlign: "justify", textAlignLast: "center" }}
         >
           {empty ? (
-            // hint sits on the line BELOW the caret, so the caret starts at
-            // the centre of an empty first line instead of inside the hint
-            <span ref={placeholderRef} className="block">
-              <span className="block">&nbsp;</span>
-              <span className="typing-char block text-center" data-state="pending">
+            // placeholder: the caret sits at the hint's start (measured above)
+            <span className="block text-center">
+              <span ref={placeholderRef} className="typing-char" data-state="pending">
                 {engine.config.mode === "zen"
                   ? "type anything — zen mode just listens…"
                   : ""}

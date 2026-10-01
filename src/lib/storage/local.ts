@@ -12,6 +12,7 @@ import {
   type StreakInfo,
   type TestMode,
 } from "@/lib/types";
+import { MAX_HUMAN_WPM } from "@/lib/engine/stats";
 import { dayKey } from "@/lib/utils";
 
 const K_RESULTS = "nolook:results";
@@ -21,14 +22,17 @@ const MAX_RESULTS = 1000;
 
 const onServer = () => typeof window === "undefined";
 
+/** Impossible results (e.g. from an old zen-duration bug) never surface or rank. */
+const plausible = (r: { wpm: number }) => r.wpm <= MAX_HUMAN_WPM;
+
 export async function getResults(): Promise<SavedResult[]> {
   if (onServer()) return [];
-  return (await get<SavedResult[]>(K_RESULTS)) ?? [];
+  return ((await get<SavedResult[]>(K_RESULTS)) ?? []).filter(plausible);
 }
 
 /** Prepends (newest first); trims history beyond MAX_RESULTS. */
 export async function saveResult(r: SavedResult): Promise<void> {
-  if (onServer()) return;
+  if (onServer() || !plausible(r)) return;
   // atomic read-modify-write: a background markSynced can't clobber this save
   await update<SavedResult[]>(K_RESULTS, (all) =>
     [r, ...(all ?? [])].slice(0, MAX_RESULTS),
@@ -62,7 +66,8 @@ export async function getResultsPage(
 
 export async function getPersonalBests(): Promise<Record<string, PersonalBest>> {
   if (onServer()) return {};
-  return (await get<Record<string, PersonalBest>>(K_PBS)) ?? {};
+  const pbs = (await get<Record<string, PersonalBest>>(K_PBS)) ?? {};
+  return Object.fromEntries(Object.entries(pbs).filter(([, pb]) => plausible(pb)));
 }
 
 /**
@@ -72,7 +77,7 @@ export async function getPersonalBests(): Promise<Record<string, PersonalBest>> 
 export async function applyPersonalBest(
   r: SavedResult,
 ): Promise<{ isNewBest: boolean; previous?: PersonalBest }> {
-  if (onServer()) return { isNewBest: false };
+  if (onServer() || !plausible(r)) return { isNewBest: false };
   const pbs = await getPersonalBests();
   const previous = pbs[r.configKey];
   if (previous && r.wpm <= previous.wpm) {

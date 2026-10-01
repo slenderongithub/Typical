@@ -4,10 +4,9 @@
  * timing before they can touch the leaderboard-eligible pool.
  */
 
-import { wpmFromChars } from "@/lib/engine/stats";
+import { MAX_HUMAN_WPM, wpmFromChars } from "@/lib/engine/stats";
 import type { SubmitResultPayload } from "@/lib/types";
 
-const MAX_HUMAN_WPM = 250;
 const MIN_DURATION_MS = 5000;
 const RATE_LIMIT_MS = 6000;
 const RATE_MAP_CAP = 10000;

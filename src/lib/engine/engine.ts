@@ -55,7 +55,9 @@ export class TypingEngine {
   private startTs = 0;
   private pausedAt = 0;
   private pausedTotal = 0;
-  private lastEventTs = 0;
+  /** elapsed at the last input, measured when it happened — a pause opened
+   *  after it (blur while idle, then "end session") must not eat into it */
+  private lastEventElapsed = 0;
   /** Elapsed shown while NOT running (frozen at pause, or the final duration at finish). */
   private frozenElapsed = 0;
   private clock: ReturnType<typeof setInterval> | null = null;
@@ -110,8 +112,8 @@ export class TypingEngine {
     if (this.finished || this.status === "paused") return;
     if (this.status === "idle") this.begin(timestampMs);
 
-    this.lastEventTs = timestampMs;
     const elapsed = this.elapsed(timestampMs);
+    this.lastEventElapsed = elapsed;
 
     if (key === "Backspace" || key === "Backspace:word") {
       this.backspace(key === "Backspace:word");
@@ -166,12 +168,11 @@ export class TypingEngine {
     this.status = reason === "failed" ? "failed" : "finished";
 
     // keystroke-driven finishes end at the last keystroke, not at wall-clock
-    // "now" — input timestamps and performance.now() share an origin in the
-    // browser, but the last event is the honest end of the run
+    // "now" — the last event is the honest end of the run
     const durationMs =
       this.config.mode === "time" && reason === "time"
         ? this.config.duration * 1000
-        : Math.max(0, this.elapsed(this.lastEventTs || undefined));
+        : this.lastEventElapsed;
 
     // the finished snapshot shows the honest final clock (0 at the end of a
     // time run, elapsed at the completing keystroke otherwise)
@@ -372,6 +373,9 @@ export class TypingEngine {
       this.recordKeystroke(elapsed, true, null);
       this.words[this.wordIndex] = { ...w, committed: true, correct: true };
       this.wordIndex++;
+      // open the next word now: the caret needs an element after the space
+      // to sit on, or it falls back to the empty-stream position
+      this.words = [...this.words, makeWord("")];
       return;
     }
 
