@@ -634,9 +634,9 @@ export function TestExperience() {
                     onClick={onGazeButton}
                     icon={
                     gaze.cameraOn ? (
-                      <VideoOff className="text-primary" />
+                      <VideoOff className="text-island-accent" />
                     ) : (
-                      <ScanFace className="text-primary" />
+                      <ScanFace className="text-island-accent" />
                     )
                   }
                   >

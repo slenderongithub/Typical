@@ -492,6 +492,16 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - The rail's collapse button stretches to the islands' width (a pill with a "collapse" label when expanded).
   - IntegrityBadge has no info tooltip, and untracked runs read just "untracked".
 
+- **Round 13: sanity sweep (2026-10-01):**
+  - Leaderboard filter pills are `fullWidth w-auto flex-auto`, so together they span the table width.
+  - The `--island-accent` token (`text-island-accent`) is the icon colour on islands. It defaults to `--primary`; pigeon overrides it with dark ink because lime vanishes on almond.
+  - On phones the nav controls shrink (h-10 instead of h-12). With the theme row open, the logo and sign-in/avatar hide so 8 swatches fit. They used to overlap, which made the palette button untappable.
+  - The rail is centred below the nav (`top-[calc(50%+2.75rem)]`) with its own `railshort:` variant (max-height 940px). `short:` stays at 860px for page padding and results.
+  - Toasts always sit at top-24, below the nav.
+  - The leaderboard AutoHeight bleed is `-mx-4 -my-12`; `-m-12` caused a horizontal scroll on phones.
+  - Added a themed `src/app/not-found.tsx`; Next's default paints a white page. It must be `"use client"` because it calls `buttonClasses()` from a client module. As a server component it threw on every request and also stalled CSS HMR.
+  - Dead code (unused since the initial commit, export-only): `GlassSurface.tsx`, `GooeyFilter.tsx`.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

@@ -96,7 +96,7 @@ export function ThemeToggle({
       aria-expanded={open}
       onClick={() => onOpenChange(!open)}
       className={cn(
-        "flex size-12 items-center justify-center rounded-full border transition-colors",
+        "flex size-10 items-center justify-center rounded-full border transition-colors sm:size-12",
         open
           ? "glass-chip text-primary-foreground"
           : "border-transparent text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground",
@@ -126,7 +126,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
     <div
       role="radiogroup"
       aria-label="theme"
-      className="flex items-center gap-0.5"
+      className="flex items-center sm:gap-0.5"
     >
       {THEMES.map((t) => {
         const active = mounted && theme === t.name;
@@ -143,7 +143,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
               if (!active) startThemeTransition(() => setTheme(t.name));
             }}
             className={cn(
-              "relative flex size-12 items-center justify-center rounded-full transition-colors",
+              "relative flex size-9 items-center justify-center rounded-full transition-colors sm:size-12",
               active
                 ? "text-surface-foreground"
                 : "hover:bg-surface-foreground/10",
@@ -158,7 +158,7 @@ export function ThemeSwatches({ onPicked }: { onPicked: () => void }) {
             )}
             <span
               aria-hidden
-              className="relative flex size-7 items-center justify-center rounded-full shadow-[0_0_0_1.5px_rgba(255,255,255,0.35),0_2px_6px_-1px_rgba(0,0,0,0.5)]"
+              className="relative flex size-6 items-center justify-center rounded-full sm:size-7 shadow-[0_0_0_1.5px_rgba(255,255,255,0.35),0_2px_6px_-1px_rgba(0,0,0,0.5)]"
               style={{ backgroundColor: t.bg }}
             >
               <span

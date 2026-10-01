@@ -26,7 +26,7 @@ export function LogoMark({ className }: { className?: string }) {
       src="/logo.png"
       alt=""
       aria-hidden
-      className={cn("size-10 shrink-0", className)}
+      className={cn("size-9 shrink-0 sm:size-10", className)}
     />
   );
 }
@@ -73,12 +73,15 @@ export function NavBar() {
       <nav
         ref={navRef}
         style={{ pointerEvents: testRunning ? "none" : "auto" }}
-        className="island flex max-w-full items-center gap-1 rounded-full p-2 sm:pl-2.5"
+        className="island flex max-w-full items-center gap-1 rounded-full p-1.5 sm:p-2 sm:pl-2.5"
       >
         <Link
           href="/"
           aria-label="Typical — home"
-          className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-2 text-[19px] font-extrabold tracking-tight text-surface-foreground sm:pr-3.5"
+          className={cn(
+            "flex shrink-0 items-center gap-2 rounded-full py-1 pl-0.5 pr-1 text-[19px] font-extrabold tracking-tight text-surface-foreground sm:pr-3.5",
+            themeOpen && "hidden sm:flex",
+          )}
         >
           <LogoMark />
           <span className="hidden sm:inline">Typical</span>
@@ -98,7 +101,9 @@ export function NavBar() {
             ) : (
               LINKS.map((l) => {
                 const active =
-                  l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+                  l.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(l.href);
                 return (
                   <Link
                     key={l.href}
@@ -106,7 +111,7 @@ export function NavBar() {
                     aria-current={active ? "page" : undefined}
                     aria-label={l.label}
                     className={cn(
-                      "relative flex h-12 items-center rounded-full px-3.5 text-base font-semibold transition-colors sm:px-5",
+                      "relative flex h-10 items-center rounded-full px-2.5 text-base font-semibold transition-colors sm:h-12 sm:px-5",
                       active
                         ? "text-primary-foreground"
                         : "text-surface-muted hover:text-surface-foreground",
@@ -119,7 +124,10 @@ export function NavBar() {
                         transition={PILL_SPRING}
                       />
                     )}
-                    <l.icon aria-hidden className="relative size-[22px] sm:hidden" />
+                    <l.icon
+                      aria-hidden
+                      className="relative size-[22px] sm:hidden"
+                    />
                     <span className="relative hidden sm:inline">{l.label}</span>
                   </Link>
                 );
@@ -128,7 +136,10 @@ export function NavBar() {
           </motion.div>
         </AnimatePresence>
 
-        <span aria-hidden className="mx-1.5 hidden h-7 w-px bg-surface-foreground/15 sm:block" />
+        <span
+          aria-hidden
+          className="mx-1.5 hidden h-7 w-px bg-surface-foreground/15 sm:block"
+        />
 
         <div className="flex shrink-0 items-center gap-1">
           <ThemeToggle open={themeOpen} onOpenChange={setThemeOpen} />
@@ -137,14 +148,22 @@ export function NavBar() {
               href="/settings"
               title={session?.user?.name ?? session?.user?.email ?? "account"}
               aria-label="your account"
-              className="btn-primary flex size-12 items-center justify-center rounded-full text-base font-bold"
+              className={cn(
+                "btn-primary flex size-10 items-center justify-center rounded-full text-base font-bold sm:size-12",
+                // phones: make room for the 8 theme swatches
+                themeOpen && "hidden sm:flex",
+              )}
             >
               {initial}
             </Link>
           ) : (
             <Link
               href="/login"
-              className="btn-primary flex h-12 items-center rounded-full px-5 text-base font-semibold"
+              className={cn(
+                "btn-primary flex h-10 items-center rounded-full px-3.5 text-sm font-semibold sm:h-12 sm:px-5 sm:text-base",
+                // phones: make room for the 8 theme swatches
+                themeOpen && "hidden sm:flex",
+              )}
             >
               sign in
             </Link>

@@ -109,9 +109,12 @@ export function LeaderboardView() {
   return (
     <div>
       {/* one filter row above the content it scopes */}
+      {/* the three filters grow to span exactly the table's width */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <GlassPill
           size="sm"
+          fullWidth
+          className="w-auto flex-auto"
           ariaLabel="test duration"
           options={DURATIONS}
           value={configKey}
@@ -119,6 +122,8 @@ export function LeaderboardView() {
         />
         <GlassPill
           size="sm"
+          fullWidth
+          className="w-auto flex-auto"
           ariaLabel="time window"
           options={WINDOWS}
           value={window_}
@@ -126,6 +131,8 @@ export function LeaderboardView() {
         />
         <GlassPill
           size="sm"
+          fullWidth
+          className="w-auto flex-auto"
           ariaLabel="integrity filter"
           options={INTEGRITY}
           value={integrity}
@@ -133,8 +140,8 @@ export function LeaderboardView() {
         />
       </div>
 
-      <AutoHeight className="-m-12">
-        <div className="p-12">
+      <AutoHeight className="-mx-4 -my-12">
+        <div className="px-4 py-12">
           {state.kind === "offline" && (
             <GlassPanel
               pad="lg"

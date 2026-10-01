@@ -14,7 +14,7 @@ export function Toaster() {
   return (
     <div
       aria-live="assertive"
-      className="pointer-events-none fixed right-4 top-24 z-[60] flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2.5 sm:right-6 lg:top-6"
+      className="pointer-events-none fixed right-4 top-24 z-[60] flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2.5 sm:right-6"
     >
       <AnimatePresence initial={false}>
         {toasts.map((t) => (

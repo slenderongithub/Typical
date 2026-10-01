@@ -85,7 +85,7 @@ const DIFFICULTIES: RailOption[] = [
 ];
 
 const ITEM =
-  "relative flex h-11 w-full select-none items-center rounded-full px-3 text-[15px] font-semibold transition-colors duration-200 short:h-10";
+  "relative flex h-11 w-full select-none items-center rounded-full px-3 text-[15px] font-semibold transition-colors duration-200 railshort:h-10";
 const ITEM_IDLE =
   "text-surface-muted hover:bg-surface-foreground/10 hover:text-surface-foreground";
 
@@ -233,7 +233,7 @@ function RailDivider() {
   return (
     <span
       aria-hidden
-      className="mx-3 my-1.5 h-px bg-surface-foreground/15 short:my-1"
+      className="mx-3 my-1.5 h-px bg-surface-foreground/15 railshort:my-1"
     />
   );
 }
@@ -531,7 +531,7 @@ export function ConfigBar({
         ref={railRef}
         aria-label="test settings"
         className={cn(
-          "fixed left-4 top-1/2 z-30 flex -translate-y-1/2 flex-col items-stretch gap-3.5 transition-opacity duration-300 sm:left-8 short:gap-2.5",
+          "fixed left-4 top-[calc(50%+2.75rem)] z-30 flex -translate-y-1/2 flex-col items-stretch gap-3.5 transition-opacity duration-300 sm:left-8 railshort:gap-2.5",
           disabled && "pointer-events-none opacity-25",
         )}
       >
@@ -545,7 +545,7 @@ export function ConfigBar({
           title={collapsed ? "expand" : "collapse"}
           // stretches to the islands' width: a pill, not a circle; its icon
           // lines up with the item icons below (island p-2 + item px-3)
-          className="island flex h-14 w-full items-center rounded-full px-5 text-surface-foreground transition-transform active:scale-[0.97] short:h-12"
+          className="island flex h-14 w-full items-center rounded-full px-5 text-surface-foreground transition-transform active:scale-[0.97] railshort:h-12"
         >
           <RailIcon>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</RailIcon>
           <RailLabel collapsed={collapsed}>
@@ -553,7 +553,7 @@ export function ConfigBar({
           </RailLabel>
         </button>
 
-        <div className="flex flex-col items-stretch gap-3.5 short:gap-2.5">
+        <div className="flex flex-col items-stretch gap-3.5 railshort:gap-2.5">
           {/* island 1 — what to type */}
           <div className="island flex flex-col rounded-[1.75rem] p-2">
             <RailGroup

@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
-/* viewports too short for the full-size config rail */
+/* short viewports: compact results + page padding */
 @custom-variant short (@media (max-height: 860px));
+/* too short for the full-size config rail, which sits below the nav */
+@custom-variant railshort (@media (max-height: 940px));
 
 /* ═══════════════════════════════════════════════════════════════════
    Typical — Liquid Glass design system
@@ -36,6 +38,9 @@
   --surface: #1f2550;
   --surface-foreground: #f7f8ff;
   --surface-muted: #b3badf;
+  /* accent for icons sitting ON an island; a theme overrides it when its
+     accent doesn't read against its own surface */
+  --island-accent: var(--primary);
 
   --primary: #9dabff;
   --primary-strong: #8093ff;
@@ -260,6 +265,8 @@
   --surface: #f2d3cf;
   --surface-foreground: #2a2c30;
   --surface-muted: #6b5f5d;
+  /* acid lime vanishes on almond blossom — use the island ink instead */
+  --island-accent: #2a2c30;
 
   --primary: #c4ec3a;
   --primary-strong: #b0da22;
@@ -326,6 +333,7 @@
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
   --color-surface-muted: var(--surface-muted);
+  --color-island-accent: var(--island-accent);
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-foreground: var(--primary-foreground);
