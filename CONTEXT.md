@@ -121,9 +121,13 @@ models (`User`/`Account`/`Session`/`VerificationToken`, plus `passwordHash`,
 Two independent layers:
 
 - **Gaze integrity** (client, honesty-first heuristic — head pose + eye
-  blendshapes via MediaPipe, *not* precise gaze): `src/lib/gaze/heuristics.ts`
-  computes a direction-normalized "looking down" score from calibrated
-  pitch/eyeLookDown baselines; `GazeController` debounces it (400ms to enter
+  blendshapes via MediaPipe, *not* precise gaze): calibration samples three
+  poses — screen center, screen bottom edge, and the **keyboard itself** —
+  and `src/lib/gaze/heuristics.ts` scores how far head pitch OR eyeLookDown
+  (whichever is further) has moved from the bottom-edge pose toward the
+  keyboard pose (1 = halfway = the decision line). Blinks are not a signal
+  (the old blink-hold suppressed real glances, since eyelids drop when
+  looking down). `GazeController` debounces it (400ms to enter
   "down", 300ms hysteresis to exit, 600ms to declare tracking "lost") into
   peek events. Produces `IntegrityStatus`: `clean` / `assisted` / `untracked`.
   When the camera is on, a run also earns a **verified score**
@@ -501,6 +505,8 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - The leaderboard AutoHeight bleed is `-mx-4 -my-12`; `-m-12` caused a horizontal scroll on phones.
   - Added a themed `src/app/not-found.tsx`; Next's default paints a white page. It must be `"use client"` because it calls `buttonClasses()` from a client module. As a server component it threw on every request and also stalled CSS HMR.
   - Dead code (unused since the initial commit, export-only): `GlassSurface.tsx`, `GooeyFilter.tsx`.
+
+- **Round 14: gaze accuracy (2026-10-01):** detection now targets "eyes on the keyboard instead of the screen" only. Calibration gained a third "look at your keyboard" step (2s settle + 1.4s sample, no dot to watch), `CalibrationData` gained `keyboardPitch`/`keyboardLookDown`, `eyeBlink` was removed from `GazeFrameResult` and the worker, and the score threshold now sits halfway between the measured bottom-edge and keyboard poses instead of being extrapolated from two on-screen points. Floors: 8° pitch / 0.1 lookDown span. Next steps if still noisy: iris landmarks (468–477) as a sharper eye signal, then a per-user logistic regression fitted on calibration frames.
 
 - **Round 17: UI fixes + perf pass (2026-10-01):**
   - Defaults: theme **dawn** (`Providers` defaultTheme + `DEFAULT_SETTINGS.theme`); config rail starts **collapsed** (`useState(true)`, localStorage `"0"` re-expands).

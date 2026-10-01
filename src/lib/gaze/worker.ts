@@ -149,7 +149,6 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     yaw,
     roll,
     eyeLookDown: blendMean(categories, ["eyeLookDownLeft", "eyeLookDownRight"]),
-    eyeBlink: blendMean(categories, ["eyeBlinkLeft", "eyeBlinkRight"]),
     confidence: faces > 0 ? 1 : 0,
   });
 }

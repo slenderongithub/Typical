@@ -3,7 +3,7 @@
  *
  * Owns the camera stream, the inference worker (~12fps frame loop), the
  * peek/lost debouncing state machine, and per-test integrity sessions.
- * Honesty contract: head-pose + eye-state heuristics only; frames never leave
+ * Honesty contract: head-pose + eye-direction heuristics only; frames never leave
  * the browser; calibration lives in memory for the tab's lifetime.
  */
 
@@ -59,6 +59,7 @@ export class GazeController {
   private samples: { pitch: number[]; lookDown: number[] } | null = null;
   private centerSample: { pitch: number; lookDown: number } | null = null;
   private bottomSample: { pitch: number; lookDown: number } | null = null;
+  private keyboardSample: { pitch: number; lookDown: number } | null = null;
 
   // integrity session
   private sessionActive = false;
@@ -166,7 +167,7 @@ export class GazeController {
 
   /** Collect median pitch/lookDown over a window while the user holds a target. */
   collectCalibration(
-    step: "center" | "bottom",
+    step: "center" | "bottom" | "keyboard",
     ms = 1200,
   ): Promise<{ pitch: number; lookDown: number }> {
     this.samples = { pitch: [], lookDown: [] };
@@ -179,22 +180,29 @@ export class GazeController {
           lookDown: median(s?.lookDown ?? []),
         };
         if (step === "center") this.centerSample = sample;
-        else this.bottomSample = sample;
+        else if (step === "bottom") this.bottomSample = sample;
+        else this.keyboardSample = sample;
         resolve(sample);
       }, ms);
     });
   }
 
-  /** Build CalibrationData from the two collected steps. */
+  /** Build CalibrationData from the three collected steps. */
   finishCalibration(): CalibrationData {
     const center = this.centerSample ?? { pitch: 0, lookDown: 0 };
     const bottom = this.bottomSample ?? { pitch: 8, lookDown: 0.35 };
+    const keyboard = this.keyboardSample ?? { pitch: 20, lookDown: 0.6 };
     const data: CalibrationData = {
       neutralPitch: center.pitch,
       bottomPitch: bottom.pitch,
       neutralLookDown: center.lookDown,
       bottomLookDown: bottom.lookDown,
-      valid: this.centerSample !== null && this.bottomSample !== null,
+      keyboardPitch: keyboard.pitch,
+      keyboardLookDown: keyboard.lookDown,
+      valid:
+        this.centerSample !== null &&
+        this.bottomSample !== null &&
+        this.keyboardSample !== null,
     };
     this.setCalibration(data);
     return data;
@@ -386,7 +394,7 @@ export class GazeController {
       return;
     }
 
-    this.score = computeDownScore(frame, this.calibration, this.score);
+    this.score = computeDownScore(frame, this.calibration);
 
     if (this.score >= DOWN_ENTER_SCORE) {
       this.upSince = 0;

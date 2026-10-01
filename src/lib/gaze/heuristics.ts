@@ -9,42 +9,39 @@
 
 import type { CalibrationData, GazeFrameResult } from "@/lib/types";
 
+/** Minimum bottom-edge → keyboard spans, so a sloppy calibration can't make jitter fire. */
+const MIN_PITCH_SPAN = 8; // degrees
+const MIN_LOOK_SPAN = 0.1; // eyeLookDown units
+
 /**
- * Score how far below the screen the user appears to be looking.
+ * Score how far the user has moved from the calibrated screen-bottom pose
+ * towards the calibrated keyboard pose. Head and eyes are scored separately
+ * and the larger wins — touch typists peek with their eyes alone, others
+ * nod their head, both count.
  *
- * Direction-normalized so camera mounting / Euler sign conventions don't
- * matter: we only care about movement *from* the calibrated screen-center
- * pose *towards and past* the calibrated bottom-edge pose.
+ *   0   → at or above the screen's bottom edge (eyes on screen)
+ *   1   → halfway from the bottom edge to the keyboard — the decision line
+ *   2   → at the calibrated keyboard pose
  *
- *   0   → at or above the calibrated bottom edge (still on screen)
- *   ≥ 1 → looking clearly below the screen bottom, i.e. at the keyboard
- *
- * Blink-hold: eyelid closure mimics the eyeLookDown blendshape, so while
- * `frame.eyeBlink > 0.6` we return `prevScore` unchanged — a blink must
- * never start (or end) a peek. Callers pass the previous frame's score.
+ * Direction-normalized against the center → keyboard pitch delta, so camera
+ * mounting / Euler sign conventions don't matter.
  */
 export function computeDownScore(
   frame: GazeFrameResult,
   cal: CalibrationData,
-  prevScore = 0,
 ): number {
-  if (frame.eyeBlink > 0.6) return prevScore;
-
   // sign of "downward" in this user's pitch axis
-  const dir = Math.sign(cal.bottomPitch - cal.neutralPitch);
+  const dir = Math.sign(cal.keyboardPitch - cal.neutralPitch) || 1;
 
-  const pitchScore =
+  const pitchT =
     (dir * (frame.pitch - cal.bottomPitch)) /
-    Math.max(6, dir * (cal.bottomPitch - cal.neutralPitch));
+    Math.max(MIN_PITCH_SPAN, dir * (cal.keyboardPitch - cal.bottomPitch));
 
-  const lookScore =
+  const lookT =
     (frame.eyeLookDown - cal.bottomLookDown) /
-    Math.max(0.08, cal.bottomLookDown - cal.neutralLookDown);
+    Math.max(MIN_LOOK_SPAN, cal.keyboardLookDown - cal.bottomLookDown);
 
-  return Math.max(
-    0,
-    0.65 * Math.max(0, pitchScore) + 0.65 * Math.max(0, lookScore),
-  );
+  return Math.max(0, 2 * pitchT, 2 * lookT);
 }
 
 /** Median of a sample window — robust to landmark jitter and outliers. */

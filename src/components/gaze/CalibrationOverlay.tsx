@@ -8,15 +8,17 @@ import { getController } from "@/lib/gaze/store";
 import type { CalibrationData } from "@/lib/types";
 
 const HOLD_MS = 1400;
+/** time to read the prompt and move the eyes before sampling starts */
+const SETTLE_MS = { center: 650, bottom: 650, keyboard: 2000 } as const;
 const RING_R = 26;
 const RING_C = 2 * Math.PI * RING_R;
 
-type Step = "intro" | "center" | "bottom" | "done";
+type Step = "intro" | "center" | "bottom" | "keyboard" | "done";
 
 const COPY: Record<Step, { title: string; hint: string }> = {
   intro: {
     title: "quick calibration",
-    hint: "two dots, about three seconds — this teaches Typical what “eyes on screen” looks like for your face and camera",
+    hint: "screen, bottom edge, then your keyboard — about six seconds",
   },
   center: {
     title: "look at the dot",
@@ -26,9 +28,13 @@ const COPY: Record<Step, { title: string; hint: string }> = {
     title: "now the bottom edge",
     hint: "follow the dot down — this marks the lowest on-screen gaze",
   },
+  keyboard: {
+    title: "now look at your keyboard",
+    hint: "eyes on the keys for about four seconds, then look back up",
+  },
   done: {
     title: "calibrated",
-    hint: "anything below that last dot reads as “looking at the keyboard”",
+    hint: "glances toward your keyboard will now count against you",
   },
 };
 
@@ -38,7 +44,8 @@ export interface CalibrationOverlayProps {
 }
 
 /**
- * Two-point calibration: screen center, then bottom-center edge. The dot
+ * Three-step calibration: screen center, bottom-center edge, then the
+ * keyboard itself (no dot to hold — the user can't see the screen). The dot
  * carries an animated progress ring while the controller collects median
  * pose samples — no dead time, every state animates.
  */
@@ -56,11 +63,11 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
   }, []);
 
   useEffect(() => {
-    if (step !== "center" && step !== "bottom") return;
+    if (step !== "center" && step !== "bottom" && step !== "keyboard") return;
     let alive = true;
     const run = async () => {
       // let the dot's spring travel settle before sampling
-      await new Promise((r) => setTimeout(r, 650));
+      await new Promise((r) => setTimeout(r, SETTLE_MS[step]));
       if (!alive || cancelled.current) return;
       setCollecting(true);
       await getController().collectCalibration(step, HOLD_MS);
@@ -68,6 +75,8 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
       setCollecting(false);
       if (step === "center") {
         setStep("bottom");
+      } else if (step === "bottom") {
+        setStep("keyboard");
       } else {
         setStep("done");
         const data = getController().finishCalibration();
@@ -83,7 +92,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
   }, [step, onDone]);
 
   const dotPos =
-    step === "bottom"
+    step === "bottom" || step === "keyboard"
       ? { top: "calc(100% - 3.5rem)", left: "50%" }
       : { top: "50%", left: "50%" };
 
@@ -129,7 +138,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         </motion.div>
       )}
 
-      {(step === "center" || step === "bottom" || step === "done") && (
+      {step !== "intro" && (
         <motion.div
           className="absolute -translate-x-1/2 -translate-y-1/2"
           animate={dotPos}

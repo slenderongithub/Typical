@@ -150,8 +150,6 @@ export interface GazeFrameResult {
   roll: number;
   /** 0–1 mean of eyeLookDownLeft/Right blendshapes */
   eyeLookDown: number;
-  /** 0–1 mean blink blendshape — used to ignore blinks */
-  eyeBlink: number;
   /** 0–1 face presence confidence */
   confidence: number;
 }
@@ -175,6 +173,9 @@ export interface CalibrationData {
   bottomPitch: number;
   neutralLookDown: number;
   bottomLookDown: number;
+  /** median pitch / lookDown while actually looking at the keyboard */
+  keyboardPitch: number;
+  keyboardLookDown: number;
   /** completed successfully */
   valid: boolean;
 }
