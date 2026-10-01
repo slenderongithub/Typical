@@ -84,6 +84,10 @@ const DIFFICULTIES: RailOption[] = [
   },
 ];
 
+/** @ and # fill their whole icon box, unlike the airier glyphs elsewhere in
+ *  the rail; draw them smaller so the rows carry the same visual weight. */
+const OPTICAL_SMALL = { width: 20, height: 20 };
+
 const ITEM =
   // 1px border on every item (transparent when idle) + 15px padding + 26px
   // icon = 58px items → a 76px collapsed island; a tall narrow column reads
@@ -592,14 +596,14 @@ export function ConfigBar({
                       onClick={() =>
                         patch({ punctuation: !config.punctuation })
                       }
-                      icon={<AtSign />}
+                      icon={<AtSign style={OPTICAL_SMALL} />}
                       label="punctuation"
                       collapsed={collapsed}
                     />
                     <RailToggle
                       active={config.numbers}
                       onClick={() => patch({ numbers: !config.numbers })}
-                      icon={<Hash />}
+                      icon={<Hash style={OPTICAL_SMALL} />}
                       label="numbers"
                       collapsed={collapsed}
                     />
