@@ -628,39 +628,47 @@ export function TestExperience() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ type: "spring", stiffness: 260, damping: 30 }}
             >
-              {/* gaze controls — the verification USP, right under the nav */}
+              {/* gaze controls — the verification USP, right under the nav:
+                  one island, one size down from the nav, same segment language */}
               {gaze.supported && (
                 <div
                   className={cn(
-                    "-mt-6 short:mt-0 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-300",
+                    "island -mt-6 flex items-center gap-1 rounded-full p-1.5 transition-opacity duration-300 short:mt-0",
                     testRunning && "pointer-events-none opacity-30",
                   )}
                 >
-                  <GlassButton
-                    size="sm"
-                    variant="island"
-                    onClick={onGazeButton}
-                    icon={
-                    gaze.cameraOn ? (
-                      <VideoOff className="text-island-accent" />
-                    ) : (
-                      <ScanFace className="text-island-accent" />
-                    )
-                  }
-                  >
-                    {gaze.cameraOn ? "turn camera off" : "verify with camera"}
-                  </GlassButton>
-                  {gaze.cameraOn && !gaze.calibrated && (
-                    <GlassButton
-                      size="sm"
-                      variant="primary"
-                      icon={<Crosshair />}
-                      onClick={() => setCalibrating(true)}
-                    >
-                      calibrate
-                    </GlassButton>
-                  )}
                   {gaze.cameraOn && <GazeStatusPill />}
+                  {gaze.cameraOn && !gaze.calibrated && (
+                    <button
+                      type="button"
+                      onClick={() => setCalibrating(true)}
+                      className="btn-primary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
+                    >
+                      <Crosshair aria-hidden className="size-4" />
+                      calibrate
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onGazeButton}
+                    aria-label={gaze.cameraOn ? "turn camera off" : undefined}
+                    title={gaze.cameraOn ? "turn camera off" : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-2 rounded-full text-sm font-semibold transition-colors",
+                      gaze.cameraOn
+                        ? "w-10 justify-center text-surface-muted hover:text-surface-foreground"
+                        : "px-4 text-surface-foreground",
+                    )}
+                  >
+                    {gaze.cameraOn ? (
+                      <VideoOff aria-hidden className="size-[18px]" />
+                    ) : (
+                      <>
+                        <ScanFace aria-hidden className="size-[18px] text-island-accent" />
+                        verify with camera
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
 
