@@ -5,7 +5,10 @@ import { Check, ImageDown, Repeat2, RotateCw, Target } from "lucide-react";
 import { useState } from "react";
 
 import { GlassButton, GlassPanel, SmoothNumber } from "@/components/glass";
-import { integrityPenaltyPct, verifiedWpm } from "@/lib/gaze/score";
+import {
+  integrityPenaltyPct,
+  verifiedWpm,
+} from "@/lib/gaze/score";
 import type { PersonalBest, SavedResult } from "@/lib/types";
 
 import { IntegrityBadge } from "./IntegrityBadge";
@@ -28,33 +31,13 @@ const item = {
 
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="glass flex min-w-0 flex-col gap-1.5 rounded-2xl px-4 py-3">
-      <span className="eyebrow truncate tracking-[0.04em]">{label}</span>
-      <span className="flex h-8 items-center truncate text-2xl font-bold tabular-nums tracking-tight text-foreground">
+    <div className="glass flex flex-col gap-2 rounded-2xl px-4 py-3.5">
+      <span className="eyebrow">{label}</span>
+      <span className="flex h-8 items-center text-[1.625rem] font-bold tabular-nums tracking-tight text-foreground">
         {value}
       </span>
     </div>
   );
-}
-
-function modeLine(r: SavedResult): string {
-  const c = r.config;
-  const base =
-    c.mode === "time"
-      ? `time ${c.duration}s`
-      : c.mode === "words"
-        ? `${c.wordCount} words`
-        : c.mode === "quote"
-          ? `quote · ${c.quoteLength}`
-          : c.mode;
-  return [
-    base,
-    c.punctuation && "punctuation",
-    c.numbers && "numbers",
-    c.difficulty !== "normal" && c.difficulty,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 }
 
 export interface ResultsScreenProps {
@@ -82,140 +65,144 @@ export function ResultsScreen({
   // factual measurement; this is the number looking away actually costs).
   const penaltyPct = integrityPenaltyPct(result);
   const vWpm = verifiedWpm(result.wpm, result);
+  // client-only screen (never server-rendered), so reading the viewport is
+  // safe; short screens get a shorter chart so the page never scrolls
+  const chartHeight = window.innerHeight < 760 ? 84 : window.innerHeight < 860 ? 110 : 160;
 
   return (
-    // one screen, no scrolling: hero island on the left, the run's story on
-    // the right, actions underneath — stacks on small screens
     <motion.div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-5"
+      className="mx-auto flex w-full max-w-4xl flex-col items-center gap-5"
       variants={container}
       initial={reduce ? false : "hidden"}
       animate="show"
     >
-      <div className="grid w-full gap-5 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)]">
-        {/* hero */}
-        <motion.div
-          variants={item}
-          className="island flex flex-col justify-between gap-6 rounded-[2rem] p-7"
-        >
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-surface-muted">
-              words per minute
-            </span>
-            <SmoothNumber
-              value={Math.round(result.wpm)}
-              className="mt-1 block text-[6.5rem] font-extrabold leading-[0.9] tracking-[-0.05em] text-surface-foreground"
-            />
-          </div>
+      {/* hero */}
+      <motion.div variants={item} className="flex flex-col items-center gap-3">
+        {/* two-row grid: numbers share one baseline, labels share the next */}
+        <div className="grid grid-cols-[auto_auto] items-baseline justify-items-center gap-x-10 gap-y-1 sm:gap-x-14">
+          <SmoothNumber
+            value={Math.round(result.wpm)}
+            className="text-7xl font-semibold leading-none tracking-tighter text-primary sm:text-8xl sm:short:text-7xl"
+          />
+          <SmoothNumber
+            value={Math.round(result.accuracy)}
+            suffix="%"
+            className="text-5xl font-semibold leading-none tracking-tighter text-foreground sm:text-6xl sm:short:text-5xl"
+          />
+          <span className="eyebrow">wpm</span>
+          <span className="eyebrow">accuracy</span>
+        </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex items-baseline gap-2">
-              <SmoothNumber
-                value={Math.round(result.accuracy)}
-                suffix="%"
-                className="text-4xl font-extrabold tracking-tight text-surface-foreground"
-              />
-              <span className="text-sm font-semibold text-surface-muted">
-                accuracy
-              </span>
+        {pb.isNewBest ? (
+          <PBCelebration delta={delta} />
+        ) : delta !== null ? (
+          <span className="rounded-full border border-glass-border bg-glass px-3 py-1 text-xs tabular-nums text-muted-foreground">
+            <span className={delta >= 0 ? "text-success" : "text-foreground"}>
+              {delta >= 0 ? "+" : ""}
+              {delta.toFixed(1)}
+            </span>{" "}
+            vs your best of {pb.previous!.wpm.toFixed(1)}
+          </span>
+        ) : null}
+      </motion.div>
+
+      {/* verified score — only when the camera was watching */}
+      {showTrackedStats && (
+        <motion.div variants={item}>
+          <div className="glass flex items-center gap-5 rounded-2xl px-5 py-4">
+            <div className="flex flex-col">
+              <span className="eyebrow">verified score</span>
+              <div className="flex items-baseline gap-1.5">
+                <SmoothNumber
+                  value={Math.round(vWpm)}
+                  className="text-3xl font-bold leading-tight text-foreground"
+                />
+                <span className="text-sm text-muted-foreground">wpm</span>
+              </div>
             </div>
-
-            {pb.isNewBest ? (
-              <PBCelebration delta={delta} />
-            ) : delta !== null ? (
-              <span className="w-fit rounded-full bg-surface-foreground/10 px-3 py-1 text-[13px] font-semibold tabular-nums text-surface-foreground">
-                {delta >= 0 ? "+" : ""}
-                {delta.toFixed(1)}{" "}
-                <span className="font-medium text-surface-muted">
-                  vs best {pb.previous!.wpm.toFixed(1)}
+            <div className="h-9 w-px bg-glass-border" />
+            <div className="text-sm">
+              {penaltyPct > 0 ? (
+                <span className="font-medium text-warning">
+                  −{penaltyPct}% for looking away
                 </span>
-              </span>
-            ) : null}
-
-            <span className="text-[13px] font-semibold text-surface-muted">
-              {modeLine(result)}
-            </span>
+              ) : (
+                <span className="font-medium text-success">
+                  no penalty — eyes stayed on screen
+                </span>
+              )}
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {result.peekCount === 0
+                  ? "no keyboard glances"
+                  : `${result.peekCount} glance${
+                      result.peekCount === 1 ? "" : "s"
+                    } down · ${(result.peekTotalMs / 1000).toFixed(
+                      1,
+                    )}s off screen`}
+              </div>
+            </div>
           </div>
         </motion.div>
+      )}
 
-        {/* the run */}
-        <div className="flex min-w-0 flex-col gap-4">
-          <motion.div
-            variants={item}
-            className="flex flex-wrap items-center gap-3"
-          >
-            <IntegrityBadge report={result} />
-            {showTrackedStats && (
-              <span className="glass inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] font-semibold">
-                <span className="text-muted-foreground">verified</span>
-                <span className="tabular-nums text-foreground">
-                  {Math.round(vWpm)} wpm
-                </span>
-                <span
-                  className={penaltyPct > 0 ? "text-warning" : "text-success"}
-                >
-                  {penaltyPct > 0 ? `−${penaltyPct}%` : "no penalty"}
-                </span>
-              </span>
-            )}
-          </motion.div>
+      {/* integrity */}
+      <motion.div variants={item}>
+        <IntegrityBadge report={result} />
+      </motion.div>
 
-          <motion.div
-            variants={item}
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
-          >
-            <StatTile label="raw wpm" value={Math.round(result.rawWpm)} />
-            <StatTile
-              label="consistency"
-              value={`${Math.round(result.consistency)}%`}
-            />
-            <StatTile
-              label="c / i / e / m"
-              value={
-                <span className="text-lg">
-                  <span className="text-success">{result.chars.correct}</span>
-                  <span className="text-faint-foreground">/</span>
-                  <span className="text-danger">{result.chars.incorrect}</span>
-                  <span className="text-faint-foreground">/</span>
-                  {result.chars.extra}
-                  <span className="text-faint-foreground">/</span>
-                  {result.chars.missed}
-                </span>
-              }
-            />
-            <StatTile
-              label="duration"
-              value={`${(result.durationMs / 1000).toFixed(result.durationMs < 60000 ? 1 : 0)}s`}
-            />
-            {showTrackedStats ? (
-              <StatTile
-                label="peeks"
-                value={
-                  result.peekCount === 0 ? (
-                    <span className="text-success">none</span>
-                  ) : (
-                    `${result.peekCount} · ${(result.peekTotalMs / 1000).toFixed(1)}s`
-                  )
-                }
-              />
-            ) : (
-              <StatTile label="mode" value={result.mode} />
-            )}
-          </motion.div>
-
-          <motion.div variants={item} className="min-w-0 flex-1">
-            <GlassPanel pad="sm" className="h-full px-5">
-              <WpmChart timeline={result.timeline} height={170} />
-            </GlassPanel>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* actions */}
+      {/* stat grid */}
       <motion.div
         variants={item}
-        className="flex flex-wrap items-center justify-center gap-2"
+        className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
       >
+        <StatTile label="raw wpm" value={Math.round(result.rawWpm)} />
+        <StatTile
+          label="consistency"
+          value={`${Math.round(result.consistency)}%`}
+        />
+        <StatTile
+          label="c / i / e / m"
+          value={
+            <span className="text-base font-semibold">
+              <span className="text-success">{result.chars.correct}</span>
+              <span className="text-faint-foreground">/</span>
+              <span className="text-danger">{result.chars.incorrect}</span>
+              <span className="text-faint-foreground">/</span>
+              {result.chars.extra}
+              <span className="text-faint-foreground">/</span>
+              {result.chars.missed}
+            </span>
+          }
+        />
+        <StatTile
+          label="duration"
+          value={`${(result.durationMs / 1000).toFixed(result.durationMs < 60000 ? 1 : 0)}s`}
+        />
+        {showTrackedStats ? (
+          <StatTile
+            label="peeks"
+            value={
+              result.peekCount === 0 ? (
+                <span className="text-success">none</span>
+              ) : (
+                `${result.peekCount} · ${(result.peekTotalMs / 1000).toFixed(1)}s`
+              )
+            }
+          />
+        ) : (
+          <StatTile label="mode" value={result.mode} />
+        )}
+      </motion.div>
+
+      {/* chart */}
+      <motion.div variants={item} className="w-full">
+        <GlassPanel pad="sm" className="px-5">
+          <WpmChart timeline={result.timeline} height={chartHeight} />
+        </GlassPanel>
+      </motion.div>
+
+      {/* actions */}
+      <motion.div variants={item} className="flex flex-wrap items-center justify-center gap-2">
         <GlassButton
           variant="primary"
           icon={<RotateCw />}
@@ -228,11 +215,7 @@ export function ResultsScreen({
           repeat
         </GlassButton>
         {onPracticeMissed && (
-          <GlassButton
-            variant="ghost"
-            icon={<Target />}
-            onClick={onPracticeMissed}
-          >
+          <GlassButton variant="ghost" icon={<Target />} onClick={onPracticeMissed}>
             practice missed words
           </GlassButton>
         )}
@@ -248,11 +231,15 @@ export function ResultsScreen({
         >
           {savedPng ? "saved" : "save png"}
         </GlassButton>
-        <span className="ml-2 hidden items-center gap-1.5 text-[13px] font-medium text-muted-foreground sm:flex">
-          <kbd className="kbd">tab</kbd>
-          next test
-        </span>
       </motion.div>
+
+      <motion.p
+        variants={item}
+        className="-mt-2 flex items-center gap-1.5 text-xs text-faint-foreground"
+      >
+        <kbd className="kbd">tab</kbd>
+        next test
+      </motion.p>
     </motion.div>
   );
 }

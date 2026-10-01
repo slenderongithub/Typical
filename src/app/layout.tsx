@@ -38,7 +38,7 @@ export default function RootLayout({
           <SessionProvider>
             <NavBar />
             <Toaster />
-            <main className="flex flex-1 flex-col px-4 pb-12 pt-32">
+            <main className="flex flex-1 flex-col px-4 pb-6 pt-32 short:pb-3 short:pt-24">
               {children}
             </main>
           </SessionProvider>

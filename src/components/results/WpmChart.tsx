@@ -96,10 +96,12 @@ function buildModel(timeline: TickSample[], width: number, height: number): Char
   const span = Math.max(1e-6, t1 - t0);
   const single = timeline.length === 1;
 
-  // 3 clean y steps rounded to 10s → 4 tick labels including 0.
+  // clean y steps rounded to 10s: 3 steps (4 labels incl. 0), or just one
+  // (0 and max) when the plot is too short for four labels to breathe
+  const steps = height < 120 ? 1 : 3;
   const maxV = Math.max(10, ...timeline.map((s) => Math.max(s.wpm, s.raw)));
-  const step = Math.ceil(maxV / 30) * 10;
-  const yMax = step * 3;
+  const step = Math.ceil(maxV / (steps * 10)) * 10;
+  const yMax = step * steps;
 
   const x = (t: number) => (single ? (left + right) / 2 : left + ((t - t0) / span) * (right - left));
   const y = (v: number) => bottom - (clamp(v, 0, yMax) / yMax) * (bottom - top);
@@ -112,7 +114,7 @@ function buildModel(timeline: TickSample[], width: number, height: number): Char
       ? `${rawPath} L ${r2(pts[pts.length - 1].x)} ${r2(bottom)} L ${r2(pts[0].x)} ${r2(bottom)} Z`
       : "";
 
-  const yTicks = [0, 1, 2, 3].map((i) => ({ v: i * step, y: y(i * step) }));
+  const yTicks = Array.from({ length: steps + 1 }, (_, i) => ({ v: i * step, y: y(i * step) }));
 
   const xSteps = [1, 2, 5, 10, 15, 30, 60, 120, 300];
   const xStep = xSteps.find((s) => span / s <= 6) ?? 600;

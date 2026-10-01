@@ -697,7 +697,7 @@ export function TestExperience() {
             saved && (
               <motion.div
                 key={`results-${saved.id}`}
-                className="flex w-full flex-1 flex-col justify-center pb-[4vh]"
+                className="flex w-full flex-1 flex-col justify-center"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}

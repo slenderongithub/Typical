@@ -478,10 +478,11 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
 
 - **Placeholder leaderboard data:** `node prisma/seed-placeholders.mjs` replaces 40 fake users (`@placeholder.typical` emails) with 480 time-mode runs spread across today, this week and older, plus clean and assisted. `--clean` removes them; deletes cascade, so real accounts are untouched. It was run against the Neon DB on 2026-10-01.
 
-- **Results screen (round 11):** fits in one viewport with no scrolling. A two-column grid: a left hero `.island` (wpm, accuracy, PB chip or delta, mode line) and, on the right, integrity + verified score, a 5-up stat row and a 170px chart. The action row sits below.
-  - It's vertically centred, and the page scrolls to top when results appear.
-  - `PBCelebration` is now a filled accent chip (trophy, "+delta"): spring-in, one outline ripple, a sheen sweep and a trophy wiggle. No particles or glow.
-  - The share card (`shareCard.ts`) is redrawn as an island on the flat background: logo + wordmark, accent mode chip, huge wpm, the run's curve in an inset panel and stat pills. It uses the page's real font via `getComputedStyle(body).fontFamily`.
+- **Results screen (round 11, revised):** the user preferred the original stacked, centred layout, so it was restored and compacted to fit one viewport with no scrolling.
+  - The changes: tighter gaps, a chart height set from `innerHeight` (160 / 110 / 84px), smaller hero type under `short:`, and `short:` main padding. Short charts get one y-step.
+  - It's vertically centred and scrolls to top on finish. Verified with no overflow at 900, 800 and 720px tall.
+  - `PBCelebration` is a filled accent chip (trophy, "+delta") with spring-in, an outline ripple, a sheen and a trophy wiggle.
+  - The share card (`shareCard.ts`) keeps the island-card design: logo + wordmark, accent mode chip, huge wpm, the run's curve in an inset panel and stat pills, using the page's real font.
 
 ## Keeping this file current
 
