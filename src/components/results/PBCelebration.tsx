@@ -1,74 +1,69 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { Trophy } from "lucide-react";
 
-/** Deterministic particle fan — no randomness in render. */
-const PARTICLES = Array.from({ length: 24 }, (_, i) => {
-  const angle = (i / 24) * Math.PI * 2;
-  const dist = 64 + (i % 3) * 22;
-  return {
-    x: Math.cos(angle) * dist,
-    y: Math.sin(angle) * dist,
-    size: 3 + (i % 3),
-    delay: (i % 6) * 0.02,
-    tone: i % 2 === 0 ? "var(--primary)" : "var(--success)",
-  };
-});
+const SPRING = { type: "spring", stiffness: 380, damping: 20 } as const;
 
 /**
- * The personal-best moment: one expanding glow ring + a burst of tiny glass
- * shards + a popping label. Runs once (~1.6s); reduced motion gets a fade.
+ * The personal-best moment, in the island language: a filled accent chip
+ * that springs in, throws one outline ripple, catches a single sheen sweep,
+ * and gives its trophy a wiggle. No particles, no glow. Reduced motion gets
+ * the static chip.
  */
-export function PBCelebration() {
+export function PBCelebration({ delta }: { delta?: number | null }) {
   const reduce = useReducedMotion();
 
-  if (reduce) {
-    return (
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="rounded-full bg-glass-strong px-3 py-1 text-xs font-semibold text-success"
-      >
-        new personal best
-      </motion.span>
-    );
-  }
-
-  return (
-    <span className="pointer-events-none relative inline-flex items-center justify-center">
-      {/* expanding ring */}
+  const chip = (
+    <>
       <motion.span
         aria-hidden
-        className="absolute rounded-full border-2 border-primary"
-        style={{ width: 56, height: 56 }}
-        initial={{ scale: 0.2, opacity: 0.9 }}
-        animate={{ scale: 2.4, opacity: 0 }}
-        transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-      />
-      {/* shards */}
-      {PARTICLES.map((p, i) => (
-        <motion.span
-          key={i}
-          aria-hidden
-          className="absolute rounded-[2px]"
-          style={{ width: p.size, height: p.size, backgroundColor: p.tone }}
-          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-          animate={{ x: p.x, y: p.y, opacity: 0, scale: 0.4, rotate: 200 }}
-          transition={{
-            duration: 1.25,
-            delay: p.delay,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        />
-      ))}
-      {/* label pop */}
-      <motion.span
-        className="relative z-10 whitespace-nowrap rounded-full bg-glass-strong px-3.5 py-1.5 text-xs font-semibold text-success shadow-[0_0_24px_-4px] shadow-success/40"
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 420, damping: 18, delay: 0.1 }}
+        className="flex"
+        initial={reduce ? false : { rotate: -25, scale: 0.4 }}
+        animate={{ rotate: [-25, 14, -8, 0], scale: 1 }}
+        transition={reduce ? undefined : { duration: 0.7, delay: 0.25, ease: "easeOut" }}
       >
-        new personal best
+        <Trophy className="size-[18px]" strokeWidth={2.4} />
+      </motion.span>
+      new personal best
+      {delta != null && delta > 0 && (
+        <span className="rounded-full bg-primary-foreground/15 px-2 py-0.5 text-xs tabular-nums">
+          +{delta.toFixed(1)}
+        </span>
+      )}
+    </>
+  );
+
+  const chipClass =
+    "glass-chip relative inline-flex h-10 items-center gap-2 overflow-hidden rounded-full pl-3.5 pr-3 text-sm font-bold text-primary-foreground";
+
+  if (reduce) return <span className={`${chipClass} w-fit`}>{chip}</span>;
+
+  return (
+    <span className="relative inline-flex w-fit">
+      {/* one outline ripple off the chip's own shape */}
+      <motion.span
+        aria-hidden
+        className="absolute inset-0 rounded-full border-2 border-primary"
+        initial={{ scale: 1, opacity: 0.9 }}
+        animate={{ scale: 1.35, opacity: 0 }}
+        transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      />
+      <motion.span
+        className={chipClass}
+        initial={{ scale: 0.6, opacity: 0, y: 8 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={SPRING}
+      >
+        {chip}
+        {/* sheen sweep */}
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 w-10 -skew-x-12 bg-white/40 blur-[2px]"
+          initial={{ left: "-30%" }}
+          animate={{ left: "130%" }}
+          transition={{ duration: 0.75, delay: 0.45, ease: "easeInOut" }}
+        />
       </motion.span>
     </span>
   );

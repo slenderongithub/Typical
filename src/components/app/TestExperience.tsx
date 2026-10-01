@@ -195,6 +195,8 @@ export function TestExperience() {
       setSaved(result);
       setPbInfo(pb);
       setPhase("results");
+      // results read top-down from the hero — never land mid-page
+      window.scrollTo({ top: 0, behavior: "smooth" });
 
       // best-effort server sync when signed in — guest mode stays local. Read
       // the session through a ref: this callback is captured by the engine's
@@ -695,7 +697,7 @@ export function TestExperience() {
             saved && (
               <motion.div
                 key={`results-${saved.id}`}
-                className="w-full"
+                className="flex w-full flex-1 flex-col justify-center pb-[4vh]"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}

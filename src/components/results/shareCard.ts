@@ -38,21 +38,50 @@ function roundRect(
   ctx.closePath();
 }
 
-function glow(
+/** Rounded pill with text; returns its width so pills can be laid out in a row. */
+function pill(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  r: number,
-  color: string,
-  alpha: number,
-): void {
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-  g.addColorStop(0, color);
-  g.addColorStop(1, "transparent");
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = g;
-  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  text: string,
+  opts: {
+    fill: string;
+    fillAlpha?: number;
+    color: string;
+    font: string;
+    dot?: string;
+  },
+): number {
+  ctx.font = opts.font;
+  const padX = 22;
+  const dotW = opts.dot ? 22 : 0;
+  const w = ctx.measureText(text).width + padX * 2 + dotW;
+  const h = 48;
+  ctx.globalAlpha = opts.fillAlpha ?? 1;
+  ctx.fillStyle = opts.fill;
+  roundRect(ctx, x, y, w, h, h / 2);
+  ctx.fill();
   ctx.globalAlpha = 1;
+  if (opts.dot) {
+    ctx.fillStyle = opts.dot;
+    ctx.beginPath();
+    ctx.arc(x + padX + 6, y + h / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = opts.color;
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + padX + dotW, y + h / 2 + 1);
+  ctx.textBaseline = "alphabetic";
+  return w;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
 }
 
 function modeLine(result: SavedResult): string {
@@ -73,7 +102,11 @@ function modeLine(result: SavedResult): string {
   return extras.length > 0 ? `${base} · ${extras.join(" · ")}` : base;
 }
 
-/** Render the 1200×630 result card and return it as a PNG blob. */
+/**
+ * Render the 1200×630 result card in the app's island language: the theme's
+ * flat background, one opaque surface island with a deep shadow, the accent
+ * as a filled chip, and the run's wpm curve in an inset panel.
+ */
 export async function renderShareCard(result: SavedResult): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -81,105 +114,150 @@ export async function renderShareCard(result: SavedResult): Promise<Blob> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas 2d context unavailable");
 
-  const bg = token("--background", "#07080d");
-  const fg = token("--foreground", "#eceef6");
-  const muted = token("--muted-foreground", "#8d93a8");
-  const primary = token("--primary", "#8b9cff");
-  const success = token("--success", "#3fd68a");
-  const warning = token("--warning", "#f3c355");
-  const border = token("--glass-border", "rgba(255,255,255,0.1)");
-  const glow1 = token("--primary", "#9dabff");
-  const glow2 = token("--surface", "#1f2550");
-  const surface = token("--glass-strong", "rgba(255,255,255,0.07)");
-  const highlight = token("--glass-highlight", "rgba(255,255,255,0.09)");
-
+  const bg = token("--background", "#10132a");
+  const surface = token("--surface", "#1f2550");
+  const onSurface = token("--surface-foreground", "#f7f8ff");
+  const surfaceMuted = token("--surface-muted", "#b3badf");
+  const primary = token("--primary", "#9dabff");
+  const onPrimary = token("--primary-foreground", "#0a0e2b");
+  const success = token("--success", "#4ee39a");
+  const warning = token("--warning", "#ffcf5c");
+  // the page's own font (next/font gives it a hashed family name)
   const sans =
-    '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif';
+    getComputedStyle(document.body).fontFamily ||
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  const logo = await loadImage("/logo.png");
 
-  // backdrop + ambient glows
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  glow(ctx, 150, 90, 500, glow1, 0.5);
-  glow(ctx, 1080, 560, 520, glow2, 0.45);
 
-  // frosted card
-  const cx = 90;
-  const cy = 80;
-  const cw = W - 180;
-  const ch = H - 160;
+  // the island
+  const ix = 56;
+  const iy = 52;
+  const iw = W - 112;
+  const ih = H - 104;
   ctx.save();
-  roundRect(ctx, cx, cy, cw, ch, 28);
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 60;
+  ctx.shadowOffsetY = 26;
   ctx.fillStyle = surface;
+  roundRect(ctx, ix, iy, iw, ih, 44);
   ctx.fill();
-  ctx.strokeStyle = border;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  // top inner highlight
-  roundRect(ctx, cx, cy, cw, ch, 28);
-  ctx.clip();
-  ctx.fillStyle = highlight;
-  ctx.fillRect(cx, cy, cw, 1.5);
   ctx.restore();
 
-  // wordmark
-  ctx.fillStyle = primary;
-  ctx.font = `600 30px ${sans}`;
+  // header: logo + wordmark, mode chip on the right
+  const pad = 52;
+  if (logo) ctx.drawImage(logo, ix + pad, iy + 44, 52, 52);
+  ctx.fillStyle = onSurface;
+  ctx.font = `800 34px ${sans}`;
+  ctx.textBaseline = "middle";
+  ctx.fillText("Typical", ix + pad + (logo ? 66 : 0), iy + 71);
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("Typical", cx + 48, cy + 68);
-  const markWidth = ctx.measureText("Typical").width;
-  ctx.fillStyle = muted;
-  ctx.font = `400 20px ${sans}`;
-  ctx.fillText("typing, verified", cx + 48 + markWidth + 14, cy + 68);
 
-  // hero wpm
-  const wpm = Math.round(result.wpm);
-  ctx.fillStyle = fg;
-  ctx.font = `650 170px ${sans}`;
-  ctx.fillText(String(wpm), cx + 44, cy + 268);
-  const wpmWidth = ctx.measureText(String(wpm)).width;
-  ctx.fillStyle = muted;
-  ctx.font = `500 40px ${sans}`;
-  ctx.fillText("wpm", cx + 44 + wpmWidth + 22, cy + 268);
+  ctx.font = `700 22px ${sans}`;
+  const mode = modeLine(result);
+  const modeW = ctx.measureText(mode).width + 44;
+  pill(ctx, ix + iw - pad - modeW, iy + 47, mode, {
+    fill: primary,
+    color: onPrimary,
+    font: `700 22px ${sans}`,
+  });
 
-  // secondary stats line
-  ctx.fillStyle = fg;
-  ctx.font = `500 28px ${sans}`;
-  const statLine = `accuracy ${Math.round(result.accuracy)}%   ·   consistency ${Math.round(
-    result.consistency,
-  )}%   ·   ${Math.round(result.durationMs / 1000)}s   ·   ${modeLine(result)}`;
-  ctx.fillText(statLine, cx + 48, cy + 340);
+  // hero number
+  ctx.fillStyle = surfaceMuted;
+  ctx.font = `700 20px ${sans}`;
+  ctx.fillText("WORDS PER MINUTE", ix + pad, iy + 168);
+  ctx.fillStyle = onSurface;
+  ctx.font = `800 210px ${sans}`;
+  ctx.fillText(String(Math.round(result.wpm)), ix + pad - 8, iy + 352);
 
-  // integrity line
+  // the run's curve in an inset panel
+  const px = ix + iw * 0.47;
+  const py = iy + 140;
+  const pw = ix + iw - pad - px;
+  const ph = 218;
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = onSurface;
+  roundRect(ctx, px, py, pw, ph, 28);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  const tl = result.timeline;
+  if (tl.length > 1) {
+    const max = Math.max(...tl.map((t) => Math.max(t.wpm, t.raw)), 1) * 1.1;
+    const at = (i: number, v: number): [number, number] => [
+      px + 28 + (i / (tl.length - 1)) * (pw - 56),
+      py + ph - 28 - (v / max) * (ph - 56),
+    ];
+    // raw, faint
+    ctx.beginPath();
+    tl.forEach((t, i) =>
+      i ? ctx.lineTo(...at(i, t.raw)) : ctx.moveTo(...at(i, t.raw)),
+    );
+    ctx.strokeStyle = surfaceMuted;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // net wpm, accent
+    ctx.beginPath();
+    tl.forEach((t, i) =>
+      i ? ctx.lineTo(...at(i, t.wpm)) : ctx.moveTo(...at(i, t.wpm)),
+    );
+    ctx.strokeStyle = primary;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  }
+
+  // stat chips
+  const chipFont = `700 22px ${sans}`;
+  let cx = ix + pad;
+  const cy = iy + ih - pad - 48;
+  for (const text of [
+    `${Math.round(result.accuracy)}% accuracy`,
+    `${Math.round(result.consistency)}% consistency`,
+    `${(result.durationMs / 1000).toFixed(result.durationMs < 60000 ? 1 : 0)}s`,
+  ]) {
+    cx +=
+      pill(ctx, cx, cy, text, {
+        fill: onSurface,
+        fillAlpha: 0.1,
+        color: onSurface,
+        font: chipFont,
+      }) + 12;
+  }
   const integrity =
     result.integrity === "clean"
-      ? { color: success, text: "clean run — eyes never left the screen" }
+      ? { dot: success, text: "clean run" }
       : result.integrity === "assisted"
         ? {
-            color: warning,
-            text: `assisted — ${result.peekCount} peek${result.peekCount === 1 ? "" : "s"} · ${(
-              result.peekTotalMs / 1000
-            ).toFixed(1)}s looking down`,
+            dot: warning,
+            text: `assisted · ${result.peekCount} peek${result.peekCount === 1 ? "" : "s"}`,
           }
-        : { color: muted, text: "untracked — camera was off" };
+        : { dot: surfaceMuted, text: "untracked" };
+  pill(ctx, cx, cy, integrity.text, {
+    fill: onSurface,
+    fillAlpha: 0.1,
+    color: onSurface,
+    font: chipFont,
+    dot: integrity.dot,
+  });
 
-  ctx.fillStyle = integrity.color;
-  ctx.beginPath();
-  ctx.arc(cx + 58, cy + 398, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.font = `500 26px ${sans}`;
-  ctx.fillText(integrity.text, cx + 80, cy + 407);
-
-  ctx.fillStyle = muted;
-  ctx.font = `400 20px ${sans}`;
+  // date, bottom right
+  ctx.fillStyle = surfaceMuted;
+  ctx.font = `600 20px ${sans}`;
+  ctx.textAlign = "right";
   ctx.fillText(
     new Date(result.createdAt).toLocaleDateString(undefined, {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
     }),
-    cx + 48,
-    cy + ch - 40,
+    ix + iw - pad,
+    cy + 31,
   );
+  ctx.textAlign = "left";
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

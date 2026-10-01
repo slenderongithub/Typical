@@ -478,6 +478,11 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
 
 - **Placeholder leaderboard data:** `node prisma/seed-placeholders.mjs` replaces 40 fake users (`@placeholder.typical` emails) with 480 time-mode runs spread across today, this week and older, plus clean and assisted. `--clean` removes them; deletes cascade, so real accounts are untouched. It was run against the Neon DB on 2026-10-01.
 
+- **Results screen (round 11):** fits in one viewport with no scrolling. A two-column grid: a left hero `.island` (wpm, accuracy, PB chip or delta, mode line) and, on the right, integrity + verified score, a 5-up stat row and a 170px chart. The action row sits below.
+  - It's vertically centred, and the page scrolls to top when results appear.
+  - `PBCelebration` is now a filled accent chip (trophy, "+delta"): spring-in, one outline ripple, a sheen sweep and a trophy wiggle. No particles or glow.
+  - The share card (`shareCard.ts`) is redrawn as an island on the flat background: logo + wordmark, accent mode chip, huge wpm, the run's curve in an inset panel and stat pills. It uses the page's real font via `getComputedStyle(body).fontFamily`.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,
