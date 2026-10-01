@@ -541,15 +541,23 @@ body {
 }
 
 /* ── Test column beside the config rail ─────────────────────────────
-   TestExperience writes the rail's live right edge into --rail-right. The
-   column pads BOTH sides by it, so its content clears the rail yet stays
-   centred on the viewport, under the nav. The transition smooths the
-   per-frame updates while the rail's labels animate and the jump when the
-   rail appears/disappears. */
+   TestExperience writes the rail's live right edge into --rail-right.
+   The stage keeps ONE width (so justified lines never reflow when the rail
+   opens), sits centred on the viewport under the nav whenever it fits, and
+   slides right only as far as it must to clear the rail. `left` (not a
+   transform) so the fixed-position rail inside it isn't re-anchored. */
 .rail-aware {
   --rail-pad: max(0px, calc(var(--rail-right, 0px) + 0.5rem));
-  padding-inline: var(--rail-pad);
-  transition: padding 0.5s var(--expo-out);
+  /* never wider than the room right of the rail, minus the page gutter */
+  --stage-w: min(64rem, calc(100vw - var(--rail-pad) - 1rem));
+}
+.rail-stage {
+  position: relative;
+  max-width: var(--stage-w);
+  left: max(0px, calc(var(--rail-pad) - (100vw - var(--stage-w)) / 2));
+  transition:
+    left 0.5s var(--expo-out),
+    max-width 0.5s var(--expo-out);
 }
 
 /* ── Typing surface ────────────────────────────────────────────────── */

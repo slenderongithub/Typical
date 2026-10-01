@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Crosshair, ScanFace, Square, VideoOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
@@ -52,6 +52,9 @@ const CameraDock = dynamic(() =>
 
 type Phase = "test" | "results";
 
+/** GlassButton's press spring, for the camera island's bare segments. */
+const PRESS_SPRING = { type: "spring", stiffness: 380, damping: 32, mass: 0.7 } as const;
+
 const RAIL_KEY = "nolook:rail-collapsed";
 
 /** Repeat/shuffle a small word set into a ~30-word practice passage. */
@@ -85,6 +88,7 @@ export function TestExperience() {
   // below. Reading the persisted store here would mismatch the SSR'd config bar.
   const [config, setConfig] = useState<TestConfig>(DEFAULT_CONFIG);
   const [railCollapsed, setRailCollapsed] = useState(true);
+  const reduceMotion = useReducedMotion();
   const [seed, setSeed] = useState<number>(() => randomSeed());
   const [engine, setEngine] = useState<TypingEngine | null>(null);
   const [phase, setPhase] = useState<Phase>("test");
@@ -589,9 +593,11 @@ export function TestExperience() {
 
   /* ── render ───────────────────────────────────────────────────────── */
 
+  const pressTap = reduceMotion ? undefined : { scale: 0.96 };
+
   return (
     <div ref={columnRef} className="rail-aware flex w-full flex-1 flex-col">
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center">
+      <div className="rail-stage mx-auto flex w-full flex-1 flex-col items-center">
         {/* the config rail is fixed to the viewport, so it lives outside the
           transformed phase wrapper below (a transform would re-anchor it) */}
         <AnimatePresence>
@@ -639,17 +645,21 @@ export function TestExperience() {
                 >
                   {gaze.cameraOn && <GazeStatusPill />}
                   {gaze.cameraOn && !gaze.calibrated && (
-                    <button
+                    <motion.button
                       type="button"
+                      whileTap={pressTap}
+                      transition={PRESS_SPRING}
                       onClick={() => setCalibrating(true)}
                       className="btn-primary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
                     >
                       <Crosshair aria-hidden className="size-4" />
                       calibrate
-                    </button>
+                    </motion.button>
                   )}
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={pressTap}
+                    transition={PRESS_SPRING}
                     onClick={onGazeButton}
                     aria-label={gaze.cameraOn ? "turn camera off" : undefined}
                     title={gaze.cameraOn ? "turn camera off" : undefined}
@@ -668,13 +678,14 @@ export function TestExperience() {
                         verify with camera
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               )}
 
-              {/* the typing stage — centred in the free height, nudged a little
-                above true centre where the eye naturally rests */}
-              <div className="flex w-full flex-1 flex-col justify-center pb-[6vh]">
+              {/* the typing stage — lifted well above true centre so the caret
+                line sits at eye level, close under the camera island; short
+                screens lift less so the live stats don't crowd the island */}
+              <div className="flex w-full flex-1 flex-col justify-center pb-[24vh] short:pb-[12vh]">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={`stage-${seed}-${configKey(config)}`}
