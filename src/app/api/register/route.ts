@@ -3,30 +3,36 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { dbAvailable, getDb } from "@/lib/server/db";
-import { checkRegisterRateLimit } from "@/lib/server/validate";
+import { clientIp, readJson, securityLog } from "@/lib/server/guard";
+import {
+  checkRegisterRateLimit,
+  displayNameSchema,
+} from "@/lib/server/validate";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(200),
-  displayName: z.string().trim().min(2).max(40),
+  displayName: displayNameSchema,
 });
 
 export async function POST(req: Request) {
   if (!dbAvailable()) {
     return NextResponse.json({ offline: true }, { status: 503 });
   }
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(req);
   if (!checkRegisterRateLimit(`register:${ip}`)) {
+    securityLog("register.rate_limited", { ip });
     return NextResponse.json(
       { error: "too many attempts — please wait a few minutes" },
       { status: 429 },
     );
   }
   try {
-    const parsed = bodySchema.safeParse(await req.json());
+    const body = await readJson(req, 4_096);
+    if (!body.ok) return body.res;
+    const parsed = bodySchema.safeParse(body.data);
     if (!parsed.success) {
       return NextResponse.json(
         { error: "invalid registration details" },
@@ -45,7 +51,7 @@ export async function POST(req: Request) {
       );
     }
     const passwordHash = await hash(password, 12);
-    await db.user.create({
+    const user = await db.user.create({
       data: {
         email: email.toLowerCase(),
         passwordHash,
@@ -53,6 +59,7 @@ export async function POST(req: Request) {
         name: displayName,
       },
     });
+    securityLog("register.created", { userId: user.id, ip });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ offline: true }, { status: 503 });

@@ -4,8 +4,23 @@
  * timing before they can touch the leaderboard-eligible pool.
  */
 
+import { z } from "zod";
+
 import { MAX_HUMAN_WPM, wpmFromChars } from "@/lib/engine/stats";
 import type { SubmitResultPayload } from "@/lib/types";
+
+/**
+ * Public display name (shown on the leaderboard). Trimmed, and control /
+ * invisible format chars (bidi overrides, zero-width spaces) are rejected so a
+ * name can't masquerade as someone else's or break layout. ZWJ stays allowed —
+ * emoji sequences need it.
+ */
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(40)
+  .refine((s) => !/(?!\u200d)[\p{Cc}\p{Cf}]/u.test(s), "invalid characters");
 
 const MIN_DURATION_MS = 5000;
 const RATE_LIMIT_MS = 6000;
@@ -112,6 +127,25 @@ export function checkRateLimit(key: string): boolean {
   return true;
 }
 
+/**
+ * Timestamps for `key` still inside `windowMs`, pruned and stored back so the
+ * caller can push onto the returned array. Map is capped like the others.
+ */
+function windowHits(
+  map: Map<string, number[]>,
+  key: string,
+  windowMs: number,
+): number[] {
+  const nowTs = Date.now();
+  if (map.size > RATE_MAP_CAP) {
+    const oldest = map.keys().next().value;
+    if (oldest !== undefined) map.delete(oldest);
+  }
+  const recent = (map.get(key) ?? []).filter((t) => nowTs - t < windowMs);
+  map.set(key, recent);
+  return recent;
+}
+
 const REGISTER_WINDOW_MS = 15 * 60_000;
 const REGISTER_MAX = 5;
 const registerHits = new Map<string, number[]>();
@@ -122,18 +156,41 @@ const registerHits = new Map<string, number[]>();
  * but enough to blunt casual mass-signup abuse.
  */
 export function checkRegisterRateLimit(key: string): boolean {
-  const nowTs = Date.now();
-  if (registerHits.size > RATE_MAP_CAP) {
-    const oldest = registerHits.keys().next().value;
-    if (oldest !== undefined) registerHits.delete(oldest);
-  }
-  const recent = (registerHits.get(key) ?? []).filter(
-    (t) => nowTs - t < REGISTER_WINDOW_MS,
-  );
+  const recent = windowHits(registerHits, key, REGISTER_WINDOW_MS);
   if (recent.length >= REGISTER_MAX) return false;
-  recent.push(nowTs);
-  registerHits.set(key, recent);
+  recent.push(Date.now());
   return true;
+}
+
+const LOGIN_WINDOW_MS = 15 * 60_000;
+const LOGIN_MAX_PER_EMAIL = 10;
+const LOGIN_MAX_PER_IP = 50;
+const loginFailures = new Map<string, number[]>();
+
+/**
+ * Temporary lockout after repeated failed sign-ins: 10 per email (any IP —
+ * stops distributed guessing on one account) or 50 per IP (stops one host
+ * spraying many accounts) inside 15 min. Self-clears as failures age out, so
+ * an attacker can't lock a victim out for longer than the window.
+ * ponytail: in-memory per instance, move to Redis/DB if running many replicas.
+ */
+export function loginLocked(email: string, ip: string): boolean {
+  return (
+    windowHits(loginFailures, `email:${email}`, LOGIN_WINDOW_MS).length >=
+      LOGIN_MAX_PER_EMAIL ||
+    windowHits(loginFailures, `ip:${ip}`, LOGIN_WINDOW_MS).length >=
+      LOGIN_MAX_PER_IP
+  );
+}
+
+export function recordLoginFailure(email: string, ip: string): void {
+  const nowTs = Date.now();
+  windowHits(loginFailures, `email:${email}`, LOGIN_WINDOW_MS).push(nowTs);
+  windowHits(loginFailures, `ip:${ip}`, LOGIN_WINDOW_MS).push(nowTs);
+}
+
+export function clearLoginFailures(email: string): void {
+  loginFailures.delete(`email:${email}`);
 }
 
 /** Replayed keystroke fingerprints across "different" runs ⇒ bot. */

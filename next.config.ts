@@ -8,6 +8,24 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/:path*",
+        headers: [
+          // browsers ignore HSTS over plain http, so localhost is unaffected
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // no framing: a camera-permission page must not be clickjackable
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=()",
+          },
+        ],
+      },
+      {
         // MediaPipe WASM + model assets: long-lived immutable cache,
         // correct content types are inferred; keep them same-origin so
         // no CORS round-trips are needed.

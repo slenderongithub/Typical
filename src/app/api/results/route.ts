@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/server/auth";
 import { dbAvailable, getDb } from "@/lib/server/db";
+import { clientIp, readJson, securityLog } from "@/lib/server/guard";
 import {
   checkFingerprintReuse,
   checkRateLimit,
@@ -65,16 +66,17 @@ export async function POST(req: Request) {
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    if (!checkRateLimit(userId ?? `ip:${ip}`)) {
+    if (!checkRateLimit(userId ?? `ip:${clientIp(req)}`)) {
       return NextResponse.json(
         { error: "slow down — one result every few seconds" },
         { status: 429 },
       );
     }
 
-    const parsed = bodySchema.safeParse(await req.json());
+    // a long zen run's timeline + key stats stay well under this
+    const body = await readJson(req, 512_000);
+    if (!body.ok) return body.res;
+    const parsed = bodySchema.safeParse(body.data);
     if (!parsed.success) {
       return NextResponse.json({ error: "malformed result" }, { status: 400 });
     }
@@ -85,6 +87,12 @@ export async function POST(req: Request) {
     const freshTiming = checkFingerprintReuse(
       fingerprintSignature(parsed.data.timingFingerprint),
     );
+    if (userId && (!plausible.ok || !freshTiming)) {
+      securityLog("result.rejected", {
+        userId,
+        reason: plausible.reason ?? "replayed keystroke timing",
+      });
+    }
     const eligible =
       plausible.ok && freshTiming && userId !== null && r.mode !== "zen";
 

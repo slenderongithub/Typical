@@ -149,6 +149,43 @@ Two independent layers:
   inconsistencies, near-zero-variance keystroke timing = bot fingerprint),
   rate-limits submissions (≥6s apart per user/ip).
 
+## Security hardening (2026-10-02)
+
+- **Every mutating API route reads its body via `readJson(req, maxBytes)`**
+  (`src/lib/server/guard.ts`), never `req.json()`. It rejects a mismatched
+  `Origin` with 403 (CSRF for our JSON routes; Auth.js's own endpoints use its
+  CSRF token) and streams the body with a hard cap, returning 413. Caps:
+  register 4KB, settings 16KB, results 512KB, claim 4MB.
+- `clientIp(req)` is the only way to key rate limits. It uses `x-real-ip`, or
+  else the *last* `x-forwarded-for` hop, because the first hop is
+  client-spoofable.
+- `securityLog(event, details)` writes one JSON line tagged
+  `"security":true`. Events: `login.failed`, `login.locked`,
+  `register.created`, `register.rate_limited`, `result.rejected`,
+  `csrf.origin_mismatch`.
+- **Sign-in lockout** (`loginLocked` / `recordLoginFailure` in
+  validate.ts) allows 10 failures per email or 50 per IP in 15 min. It is a
+  sliding window, so it clears itself. When locked, `authorize` throws
+  `LockedOut` (`code: "locked"`) and AuthPanel shows "too many attempts".
+  Unknown emails still run bcrypt against `TIMING_PAD_HASH`, so timing doesn't
+  reveal which emails exist. Like the other limits it is in-memory and
+  per-instance.
+- `displayNameSchema` (validate.ts) is shared by register and settings. It
+  trims the name and rejects control/format characters (bidi overrides,
+  zero-width spaces), but allows ZWJ for emoji.
+- Global response headers in `next.config.ts`: HSTS (2y, includeSubDomains,
+  no preload), nosniff, strict-origin-when-cross-origin, `X-Frame-Options:
+  DENY`, `Permissions-Policy: camera=(self), microphone=(), geolocation=()`.
+  If the app ever needs the mic or an iframe embed, relax these.
+- Known gaps: `/api/register` still answers 409 for an existing email
+  (enumeration). Fixing that needs email verification, so for now only the
+  rate limit mitigates it. There is no CSP yet (MediaPipe needs
+  `wasm-unsafe-eval` and worker-src, and next-themes uses an inline script).
+  The `AUTH_SECRET` fallback still only warns in production.
+- UI: the password field has a show/hide toggle, and the layout has a
+  skip-to-content link to `#main`. It is unreachable on the test page, where
+  Tab is restart.
+
 ## Design system conventions (binding — see `CONTRACTS.md`)
 
 - Colors: **token utilities only** (`bg-background`, `text-foreground`,

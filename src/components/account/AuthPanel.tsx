@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import { LogoMark } from "@/components/app/NavBar";
 import { GlassButton, GlassPill } from "@/components/glass";
+import { cn } from "@/lib/utils";
 
 type Tab = "signin" | "register";
 
@@ -23,18 +24,31 @@ function GithubMark(props: React.SVGProps<SVGSVGElement>) {
 
 function Field({
   label,
+  trailing,
+  className,
   ...props
-}: React.ComponentPropsWithoutRef<"input"> & { label: string }) {
+}: React.ComponentPropsWithoutRef<"input"> & {
+  label: string;
+  trailing?: React.ReactNode;
+}) {
+  // trailing sits outside the <label>: a button inside it would become the
+  // label's control and steal clicks on the caption
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium text-foreground">
-        {label}
-      </span>
-      <input
-        className="h-11 w-full rounded-xl border border-glass-border bg-glass px-3.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-faint-foreground hover:border-faint-foreground/60 focus-visible:border-primary/70 focus-visible:shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_22%,transparent)] focus-visible:outline-none"
-        {...props}
-      />
-    </label>
+    <div className="relative">
+      <label className="block">
+        <span className="mb-1.5 block text-[13px] font-medium text-foreground">
+          {label}
+        </span>
+        <input
+          className={cn(
+            "h-11 w-full rounded-xl border border-glass-border bg-glass px-3.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-faint-foreground hover:border-faint-foreground/60 focus-visible:border-primary/70 focus-visible:shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_22%,transparent)] focus-visible:outline-none",
+            className,
+          )}
+          {...props}
+        />
+      </label>
+      {trailing}
+    </div>
   );
 }
 
@@ -44,6 +58,7 @@ export function AuthPanel() {
   const [tab, setTab] = useState<Tab>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,7 +105,11 @@ export function AuthPanel() {
         redirect: false,
       });
       if (result?.error) {
-        setError("wrong email or password");
+        setError(
+          result.code === "locked"
+            ? "too many attempts — wait 15 minutes and try again"
+            : "wrong email or password",
+        );
         return;
       }
       router.push("/");
@@ -163,7 +182,19 @@ export function AuthPanel() {
           />
           <Field
             label="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
+            className="pr-11"
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "hide password" : "show password"}
+                aria-pressed={showPassword}
+                className="absolute bottom-0 right-0 z-10 grid size-11 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none [&_svg]:size-4"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            }
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="at least 8 characters"

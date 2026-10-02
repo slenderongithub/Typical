@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { auth } from "@/lib/server/auth";
 import { dbAvailable, getDb } from "@/lib/server/db";
+import { readJson } from "@/lib/server/guard";
+import { displayNameSchema } from "@/lib/server/validate";
 
 export const runtime = "nodejs";
 
@@ -30,11 +32,8 @@ export async function GET() {
 }
 
 const putSchema = z.object({
-  settings: z
-    .record(z.string(), z.unknown())
-    .refine((s) => JSON.stringify(s).length <= 20000)
-    .optional(),
-  displayName: z.string().trim().min(2).max(40).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+  displayName: displayNameSchema.optional(),
 });
 
 export async function PUT(req: Request) {
@@ -46,7 +45,9 @@ export async function PUT(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "sign in required" }, { status: 401 });
     }
-    const parsed = putSchema.safeParse(await req.json());
+    const body = await readJson(req, 16_384);
+    if (!body.ok) return body.res;
+    const parsed = putSchema.safeParse(body.data);
     if (!parsed.success) {
       return NextResponse.json({ error: "invalid settings" }, { status: 400 });
     }

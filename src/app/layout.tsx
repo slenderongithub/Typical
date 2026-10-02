@@ -37,9 +37,18 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <Providers>
           <SessionProvider>
+            <a
+              href="#main"
+              className="sr-only rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+            >
+              skip to content
+            </a>
             <NavBar />
             <Toaster />
-            <main className="flex flex-1 flex-col px-4 pb-6 pt-32 short:pb-3 short:pt-24">
+            <main
+              id="main"
+              tabIndex={-1}
+              className="flex flex-1 flex-col px-4 pb-6 pt-32 outline-none short:pb-3 short:pt-24">
               {children}
             </main>
             <Footer />

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/server/auth";
 import { dbAvailable, getDb } from "@/lib/server/db";
+import { readJson } from "@/lib/server/guard";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,10 @@ export async function POST(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "sign in required" }, { status: 401 });
     }
-    const parsed = bodySchema.safeParse(await req.json());
+    // up to 200 runs per batch, each with its per-second timeline
+    const body = await readJson(req, 4_000_000);
+    if (!body.ok) return body.res;
+    const parsed = bodySchema.safeParse(body.data);
     if (!parsed.success) {
       return NextResponse.json({ error: "malformed history" }, { status: 400 });
     }

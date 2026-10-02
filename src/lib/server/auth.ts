@@ -1,11 +1,17 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth, { CredentialsSignin, type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import { z } from "zod";
 
 import { dbAvailable, getDb } from "./db";
+import { clientIp, securityLog } from "./guard";
+import {
+  clearLoginFailures,
+  loginLocked,
+  recordLoginFailure,
+} from "./validate";
 
 /**
  * Auth.js v5. JWT session strategy so sessions never require DB reads, and
@@ -14,9 +20,22 @@ import { dbAvailable, getDb } from "./db";
  */
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(200),
 });
+
+/** Surfaces to the client as `signIn(...).code === "locked"`. */
+class LockedOut extends CredentialsSignin {
+  code = "locked";
+}
+
+/**
+ * Compared against when the email has no password, so a miss costs the same
+ * bcrypt time as a wrong password and response timing can't reveal which
+ * emails have accounts.
+ */
+const TIMING_PAD_HASH =
+  "$2b$12$m3mYuKtQtejkhnPdMpGKne3ioTyOgn/rb3CiRMkZikCFcMX82Uz3K";
 
 const providers: NextAuthConfig["providers"] = [];
 
@@ -37,16 +56,27 @@ if (dbAvailable()) {
         email: { label: "email", type: "email" },
         password: { label: "password", type: "password" },
       },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
+        const email = parsed.data.email.toLowerCase();
+        const ip = clientIp(request);
+        if (loginLocked(email, ip)) {
+          securityLog("login.locked", { email, ip });
+          throw new LockedOut();
+        }
         const db = getDb();
-        const user = await db.user.findUnique({
-          where: { email: parsed.data.email.toLowerCase() },
-        });
-        if (!user?.passwordHash) return null;
-        const ok = await compare(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
+        const user = await db.user.findUnique({ where: { email } });
+        const ok = await compare(
+          parsed.data.password,
+          user?.passwordHash ?? TIMING_PAD_HASH,
+        );
+        if (!user?.passwordHash || !ok) {
+          recordLoginFailure(email, ip);
+          securityLog("login.failed", { email, ip });
+          return null;
+        }
+        clearLoginFailures(email);
         return {
           id: user.id,
           email: user.email,
