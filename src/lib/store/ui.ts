@@ -10,5 +10,9 @@ interface UiStore {
 
 export const useUi = create<UiStore>((set) => ({
   testRunning: false,
-  setTestRunning: (testRunning) => set({ testRunning }),
+  setTestRunning: (testRunning) => {
+    // drives the shared `.typing-chrome` fade in globals.css
+    document.documentElement.toggleAttribute("data-typing", testRunning);
+    set({ testRunning });
+  },
 }));

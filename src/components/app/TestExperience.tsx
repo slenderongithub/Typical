@@ -639,8 +639,8 @@ export function TestExperience() {
               {gaze.supported && (
                 <div
                   className={cn(
-                    "island rail-pinned -mt-6 flex items-center gap-1 rounded-full p-1.5 short:mt-0",
-                    testRunning && "pointer-events-none opacity-30",
+                    "typing-chrome island rail-pinned -mt-6 flex items-center gap-1 rounded-full p-1.5 short:mt-0",
+                    testRunning && "pointer-events-none",
                   )}
                 >
                   {gaze.cameraOn && <GazeStatusPill />}

@@ -538,8 +538,9 @@ export function ConfigBar({
         className={cn(
           // centred in the space below the nav where the nav could overlap it,
           // and on the full viewport once the nav is clear of it (xl+)
-          "fixed left-4 top-[calc(50%+33px)] z-30 flex -translate-y-1/2 flex-col items-stretch sm:top-[calc(50%+41px)] xl:top-1/2 gap-3.5 transition-opacity duration-300 sm:left-8 railshort:gap-2.5",
-          disabled && "pointer-events-none opacity-25",
+          "fixed left-4 top-[calc(50%+33px)] z-30 flex -translate-y-1/2 flex-col items-stretch sm:top-[calc(50%+41px)] xl:top-1/2 gap-3.5 sm:left-8 railshort:gap-2.5",
+          "typing-chrome",
+          disabled && "pointer-events-none",
         )}
       >
         <button

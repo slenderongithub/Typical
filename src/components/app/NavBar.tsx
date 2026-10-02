@@ -63,12 +63,10 @@ export function NavBar() {
     .toUpperCase();
 
   return (
-    <motion.header
+    <header
       // the full-width strip must not swallow clicks meant for things beside
       // the pill (e.g. the top of the test config rail) — only the nav is live
-      className="pointer-events-none fixed inset-x-0 top-3 z-40 flex justify-center px-3 sm:top-4 sm:px-4"
-      animate={{ opacity: testRunning ? 0.06 : 1 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className="typing-chrome pointer-events-none fixed inset-x-0 top-3 z-40 flex justify-center px-3 sm:top-4 sm:px-4"
     >
       <nav
         ref={navRef}
@@ -169,6 +167,6 @@ export function NavBar() {
           )}
         </div>
       </nav>
-    </motion.header>
+    </header>
   );
 }
