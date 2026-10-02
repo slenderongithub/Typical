@@ -15,7 +15,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider
       attribute="class"
       themes={["midnight", "dawn", "aurora", "sunset", "basil", "cannoli", "pigeon", "poseidon"]}
-      defaultTheme="dawn"
+      defaultTheme="cannoli"
       enableSystem={false}
     >
       {children}

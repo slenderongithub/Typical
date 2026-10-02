@@ -279,7 +279,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: "dawn",
+  theme: "cannoli",
   liveStats: true,
   smoothCaret: true,
   quickRestart: true,
