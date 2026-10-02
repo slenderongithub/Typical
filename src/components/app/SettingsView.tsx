@@ -27,7 +27,7 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-6 py-3.5">
+    <div className="flex items-center justify-between gap-6 py-2.5">
       <div className="min-w-0">
         <div className="text-[15px] font-semibold text-foreground">{label}</div>
         {hint && (
@@ -85,9 +85,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <GlassPanel pad="md" className="w-full">
+    <GlassPanel pad="sm" className="h-full w-full px-5">
       <h2 className="card-title">{title}</h2>
-      <div className="mt-2 divide-y divide-glass-border">{children}</div>
+      <div className="mt-1 divide-y divide-glass-border">{children}</div>
     </GlassPanel>
   );
 }
@@ -131,7 +131,7 @@ export function SettingsView() {
       <div
         role="radiogroup"
         aria-label="theme"
-        className="grid grid-cols-2 gap-4 py-4 sm:grid-cols-4"
+        className="grid grid-cols-2 gap-3 py-3 sm:grid-cols-4"
       >
         {THEMES.map((t) => {
           const active = mounted && theme === t.name;
@@ -148,7 +148,7 @@ export function SettingsView() {
               className={cn(
                 // a miniature of the site in that theme: flat background,
                 // nav + rail islands, typing lines with the accent caret
-                "relative aspect-[16/11] overflow-hidden rounded-[1.25rem] text-left shadow-[0_10px_24px_-12px_rgba(0,0,0,0.55)] transition-transform duration-300 hover:-translate-y-1",
+                "relative aspect-[16/9] overflow-hidden rounded-[1.25rem] text-left shadow-[0_10px_24px_-12px_rgba(0,0,0,0.55)] transition-transform duration-300 hover:-translate-y-1",
                 active
                   ? "ring-[3px] ring-primary ring-offset-[3px] ring-offset-background"
                   : "ring-1 ring-black/10",
@@ -391,7 +391,8 @@ export function SettingsView() {
 
   return (
     <motion.div
-      className="flex flex-col gap-4"
+      // wide screens pair the short sections side by side; themes span both
+      className="grid gap-3 lg:grid-cols-2"
       initial="hidden"
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.05 } } }}
@@ -399,6 +400,7 @@ export function SettingsView() {
       {sections.map((section) => (
         <motion.div
           key={section.key}
+          className={section.key === "appearance" ? "lg:col-span-2" : undefined}
           variants={{
             hidden: { opacity: 0, y: 14 },
             show: {

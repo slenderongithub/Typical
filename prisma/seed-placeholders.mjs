@@ -1,4 +1,4 @@
-// Fills the leaderboard with fake placeholder typists so every filter
+// Fills the leaderboard with a few placeholder typists (70–90 wpm) so every filter
 // (15/30/60/120s × all time/this week/today × clean/assisted) has entries.
 //
 //   node prisma/seed-placeholders.mjs          # (re)seed — replaces old placeholders
@@ -9,16 +9,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const DOMAIN = "placeholder.typical";
-const NAMES = [
-  "swiftkeys", "homerow_hero", "qwertyqueen", "tapdancer", "clackattack",
-  "inkwell", "keysmith", "fingerfox", "blindtyper", "novaflow",
-  "quietcaps", "rapidrune", "silkstroke", "tenfingers", "pixelpress",
-  "gazeless", "monokai", "lowercase", "thockwave", "spacebar_sam",
-  "ember", "juniper", "orbit", "kestrel", "maple",
-  "tidal", "cobalt", "sable", "willow", "zephyr",
-  "marlowe", "ivy_types", "basalt", "fern", "lumen",
-  "quill", "rook", "sparrow", "velvet", "wren",
-];
+const NAMES = ["swiftkeys", "homerow_hero", "qwertyqueen", "tapdancer", "keysmith"];
 const DURATIONS = [15, 30, 60, 120];
 const DAY = 86_400_000;
 
@@ -39,7 +30,9 @@ function timeline(seconds, wpm) {
 
 function result(userId, duration, skill, ageMs) {
   // shorter tests run hotter; every run wobbles around the typist's skill
-  const wpm = Math.round(skill * (1 + (60 - duration) / 400) * between(0.9, 1.06) * 10) / 10;
+  const wpm = Math.round(
+    Math.min(90, Math.max(70, skill * (1 + (60 - duration) / 400) * between(0.9, 1.06))) * 10,
+  ) / 10;
   const accuracy = Math.round(between(89, 99.8) * 10) / 10;
   const correct = Math.round((wpm * 5 * duration) / 60);
   const assisted = rand() < 0.3;
@@ -89,7 +82,7 @@ async function main() {
     const user = await db.user.create({
       data: { name, displayName: name, email: `${name}@${DOMAIN}` },
     });
-    const skill = between(48, 150);
+    const skill = between(72, 86);
     const rows = [];
     for (const d of DURATIONS) {
       rows.push(result(user.id, d, skill, between(0.05, 0.9) * DAY)); // today

@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 
 import "./globals.css";
 
+import { Footer } from "@/components/app/Footer";
 import { NavBar } from "@/components/app/NavBar";
 import { Toaster } from "@/components/app/Toaster";
 import { Providers } from "@/components/glass";
@@ -41,6 +42,7 @@ export default function RootLayout({
             <main className="flex flex-1 flex-col px-4 pb-6 pt-32 short:pb-3 short:pt-24">
               {children}
             </main>
+            <Footer />
           </SessionProvider>
         </Providers>
       </body>

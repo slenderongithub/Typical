@@ -3,7 +3,7 @@ import { SettingsView } from "@/components/app/SettingsView";
 
 export default function SettingsPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-5xl">
       <PageHeader title="settings" />
       <SettingsView />
     </div>

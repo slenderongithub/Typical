@@ -369,9 +369,8 @@ export class GazeController {
         });
       } else if (this.peeking) {
         this.setStatus("down");
-      } else {
-        this.setStatus("uncertain");
       }
+      // not yet debounced: still "eyes on screen" until it becomes a peek
     } else if (this.score < DOWN_EXIT_SCORE) {
       this.downSince = 0;
       if (this.peeking) {
@@ -385,8 +384,10 @@ export class GazeController {
       }
     } else {
       // hysteresis mid-zone: not enough to enter, not enough to exit
+      // a calibrated model mostly lands here on an ordinary on-screen look —
+      // showing "uncertain" made it read as broken
       this.downSince = 0;
-      if (!this.peeking) this.setStatus("uncertain");
+      if (!this.peeking) this.setStatus("ok");
       else this.upSince = 0;
     }
 

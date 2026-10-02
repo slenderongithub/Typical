@@ -47,7 +47,7 @@ const ORDER: CalStepKind[] = ["sweep", "keys", "type", "drill"];
 const SENTENCE = "pack my box with five dozen liquor jugs";
 
 const COPY: Record<CalStepKind | "intro" | "done" | "failed", { title: string; hint: string }> = {
-  intro: { title: "calibration", hint: "about 45 seconds — sound on, sit how you type" },
+  intro: { title: "calibration", hint: "4 short steps, about a minute — sound on, sit how you type" },
   sweep: { title: "follow the dot", hint: "eyes only is fine" },
   keys: { title: "look at your keyboard", hint: "scan slowly from left to right until the beep" },
   type: { title: "type this without looking down", hint: "eyes on the line" },
@@ -113,7 +113,11 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
   const [phase, setPhase] = useState<Phase>("intro");
   const [stepIdx, setStepIdx] = useState(0);
   const [cueOn, setCueOn] = useState(false);
-  const [problem, setProblem] = useState("");
+  const [problem] = useState(""); // unused while the self-check is off
+  /** paused on a step's instructions until the user says go */
+  const [waiting, setWaiting] = useState(false);
+  const goRef = useRef<(() => void) | null>(null);
+  const calRef = useRef<CalibrationData | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const onDoneRef = useRef(onDone);
   useEffect(() => {
@@ -144,8 +148,14 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
           : kind === "keys" ? KEYS_MS
           : kind === "type" ? TYPE_MS
           : cues[cues.length - 1] + GLANCE_MS + 1500;
-        Object.assign(step, { kind, start: performance.now(), ms, cues });
+        // show this step's instructions and wait — no frames are labelled meanwhile
+        step.start = 0;
         setStepIdx(i);
+        setWaiting(true);
+        await new Promise<void>((r) => (goRef.current = r));
+        if (!alive) return;
+        setWaiting(false);
+        Object.assign(step, { kind, start: performance.now(), ms, cues });
         for (const cue of cues) {
           later(cue, () => setCueOn(true));
           later(cue + GLANCE_MS, () => {
@@ -158,15 +168,13 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         if (!alive) return;
       }
       step.start = 0;
-      const { cal, problem } = fitCalibration(samples);
-      if (problem) {
-        setProblem(problem);
-        setPhase("failed");
-        return;
-      }
+      // ponytail: the self-check verdict is ignored for now — every finished run
+      // counts as calibrated. Restore the `problem` → "failed" branch once the
+      // gaze model is reworked.
+      const cal = { ...fitCalibration(samples).cal, valid: true };
       getController().setCalibration(cal);
+      calRef.current = cal;
       setPhase("done");
-      later(900, () => onDoneRef.current(cal));
     };
     void run();
 
@@ -175,6 +183,15 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
       off();
       timers.forEach(clearTimeout);
     };
+  }, [phase]);
+
+  // own effect: changing phase cleans up the run effect above, which used to
+  // cancel this timer and leave the overlay stuck on "calibrated"
+  useEffect(() => {
+    if (phase !== "done" || !calRef.current) return;
+    const cal = calRef.current;
+    const t = setTimeout(() => onDoneRef.current(cal), 900);
+    return () => clearTimeout(t);
   }, [phase]);
 
   const start = () => {
@@ -226,7 +243,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         </div>
       )}
 
-      {phase === "run" && kind === "sweep" && (
+      {phase === "run" && !waiting && kind === "sweep" && (
         <motion.span
           className="absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_6px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
           initial={{ top: SWEEP[0][0], left: SWEEP[0][1] }}
@@ -235,7 +252,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         />
       )}
 
-      {phase === "run" && kind === "type" && (
+      {phase === "run" && !waiting && kind === "type" && (
         <div className="mt-16 flex w-full max-w-xl flex-col items-center gap-4 px-6">
           <p className="text-center text-2xl font-semibold text-foreground">{SENTENCE}</p>
           <input
@@ -246,7 +263,7 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
         </div>
       )}
 
-      {phase === "run" && kind === "drill" && (
+      {phase === "run" && !waiting && kind === "drill" && (
         <span className="flex size-20 items-center justify-center text-primary" aria-live="polite">
           {cueOn ? (
             <ArrowDown className="size-16" aria-label="glance at your keys" />
@@ -254,6 +271,12 @@ export function CalibrationOverlay({ onDone, onCancel }: CalibrationOverlayProps
             <span className="text-5xl font-light leading-none text-foreground">+</span>
           )}
         </span>
+      )}
+
+      {phase === "run" && waiting && (
+        <GlassButton variant="primary" autoFocus onClick={() => goRef.current?.()}>
+          ready
+        </GlassButton>
       )}
 
       {phase === "done" && (

@@ -22,7 +22,12 @@ const STATUS_META: Record<
 /** Always-visible verdict of what the gaze system currently thinks — a segment inside the camera island. */
 export function GazeStatusPill() {
   const status = useGazeStore((s) => s.status);
-  const meta = STATUS_META[status];
+  const calibrated = useGazeStore((s) => s.calibrated);
+  // without a calibration the controller can only say "uncertain" — say why
+  const meta =
+    status === "uncertain" && !calibrated
+      ? { tone: "warning" as const, label: "not calibrated" }
+      : STATUS_META[status];
   return (
     <span
       className="flex h-10 items-center gap-2 pl-3.5 pr-2 text-sm font-semibold text-surface-muted"

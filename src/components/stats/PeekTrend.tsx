@@ -30,11 +30,11 @@ export function PeekTrend({ results }: PeekTrendProps) {
     <div>
       <h3 className="card-title mb-4">peek trend</h3>
       {points.length < 2 ? (
-        <div className="grid h-[140px] place-items-center text-sm text-muted-foreground">
+        <div className="grid h-[190px] place-items-center text-sm text-muted-foreground">
           not enough tracked runs yet — enable the camera on a few tests
         </div>
       ) : (
-        <TrendChart points={points} valueLabel="peeks" height={140} tickBase={1} />
+        <TrendChart points={points} valueLabel="peeks" height={190} tickBase={1} />
       )}
     </div>
   );

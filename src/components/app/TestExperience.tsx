@@ -269,6 +269,9 @@ export function TestExperience() {
           started = true;
           setTestRunning(true);
           useToasts.getState().clear();
+          // a button still focused from a click (calibrate, camera) would
+          // otherwise be activated by Space/Enter later
+          (document.activeElement as HTMLElement | null)?.blur();
           const g = useGazeStore.getState();
           if (g.cameraOn && g.calibrated) {
             try {
@@ -366,7 +369,9 @@ export function TestExperience() {
         target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
+          target.isContentEditable ||
+          // modals (consent, calibration) own their keys
+          target.closest('[role="dialog"]'))
       ) {
         return;
       }
@@ -386,6 +391,9 @@ export function TestExperience() {
         if (performance.now() - tabArmedRef.current < 1500) {
           e.preventDefault();
           restart(false);
+        } else if (phaseRef.current === "test") {
+          // never let Enter "click" a focused camera/calibrate button mid-flow
+          e.preventDefault();
         }
         return;
       }
@@ -680,8 +688,9 @@ export function TestExperience() {
               )}
 
               {/* the typing stage — centred in the free height, nudged a little
-                above true centre where the eye naturally rests */}
-              <div className="flex w-full flex-1 flex-col justify-center pb-[6vh]">
+                above true centre where the eye naturally rests, plus one
+                typing line (2.6rem, doubled since the stage is centred) */}
+              <div className="flex w-full flex-1 flex-col justify-center pb-[calc(6vh+5.2rem)]">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={`stage-${seed}-${configKey(config)}`}

@@ -1,13 +1,15 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import type { KeyStat } from "@/lib/types";
 import { clamp, cn } from "@/lib/utils";
 
 const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 const DIGITS = "1234567890";
+/** what punctuation mode and quotes actually produce */
+const PUNCT = ".,'\"-?!;:()";
 /** Real-keyboard stagger offsets per row (in key-width fractions). */
 const ROW_OFFSETS = [0, 0.35, 0.85];
 /** Key width in rem (matches `sm:size-14`) — stagger offsets scale against it. */
@@ -25,17 +27,33 @@ export interface KeyHeatmapProps {
 export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
   const [tip, setTip] = useState<string | null>(null);
 
-  const hasDigits = useMemo(
-    () =>
-      DIGITS.split("").some((d) => {
-        const s = keyStats[d];
-        return s && s.hits + s.misses > 0;
-      }),
-    [keyStats],
-  );
+  const used = (set: string) =>
+    set.split("").some((k) => {
+      const s = keyStats[k];
+      return s && s.hits + s.misses > 0;
+    });
+  // on by default only when there's data to show
+  const [showDigits, setShowDigits] = useState(() => used(DIGITS));
+  const [showPunct, setShowPunct] = useState(() => used(PUNCT));
 
-  const rows = hasDigits ? [DIGITS, ...ROWS] : ROWS;
-  const offsets = hasDigits ? [0, ...ROW_OFFSETS] : ROW_OFFSETS;
+  const rows = [...(showDigits ? [DIGITS] : []), ...ROWS, ...(showPunct ? [PUNCT] : [])];
+  const offsets = [...(showDigits ? [0] : []), ...ROW_OFFSETS, ...(showPunct ? [0.35] : [])];
+
+  const toggle = (label: string, on: boolean, set: (v: boolean) => void) => (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={() => set(!on)}
+      className={cn(
+        "h-7 rounded-full px-3 text-xs font-semibold transition-colors",
+        on
+          ? "bg-primary text-primary-foreground"
+          : "glass-subtle text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
+  );
 
   const active = tip
     ? (() => {
@@ -112,11 +130,11 @@ export function KeyHeatmap({ keyStats }: KeyHeatmapProps) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="card-title">
-            per-key accuracy
-          </h3>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="card-title mr-1">per-key accuracy</h3>
+          {toggle("numbers", showDigits, setShowDigits)}
+          {toggle("punctuation", showPunct, setShowPunct)}
         </div>
         {/* live readout — never overlaps the keys, always legible */}
         <div className="flex h-9 items-center">
