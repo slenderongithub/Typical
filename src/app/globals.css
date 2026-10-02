@@ -579,42 +579,23 @@ html[data-typing] .typing-chrome {
 }
 
 /* ── Test column beside the config rail ─────────────────────────────
-   TestExperience writes the rail's live right edge into --rail-right.
-   The stage keeps ONE width (so justified lines never reflow when the rail
-   opens) and is centred on the viewport under the nav while the rail is
-   collapsed. As the rail grows it glides right by half the growth (the
-   same motion as centring in the space beside the rail), and further only
-   if it must to clear the rail on small screens. `left` (not a transform)
-   so the fixed-position rail inside it isn't re-anchored. */
+   TestExperience writes the rail's live right edge into --rail-right; the
+   column pads by it and centres its content in the space that's left. The
+   transition smooths both the per-frame updates while the rail's labels
+   animate and the jump when the rail appears/disappears. */
 .rail-aware {
   --rail-pad: max(0px, calc(var(--rail-right, 0px) + 0.5rem));
-  /* the collapsed rail's pad (76px rail at 32px + 0.5rem) — the centred
-     baseline. ponytail: hardcoded; update if the collapsed rail resizes */
-  --rail-rest-pad: 116px;
-  /* never wider than the room right of the rail, minus the page gutter */
-  --stage-w: min(64rem, calc(100vw - var(--rail-pad) - 1rem));
-  --stage-shift: max(
-    0px,
-    calc((var(--rail-pad) - var(--rail-rest-pad)) / 2),
-    calc(var(--rail-pad) - (100vw - var(--stage-w)) / 2)
-  );
+  padding-left: var(--rail-pad);
+  transition: padding-left 0.5s var(--expo-out);
 }
-.rail-stage {
-  position: relative;
-  max-width: var(--stage-w);
-  left: var(--stage-shift);
+/* keeps an element centred on the viewport (e.g. under the nav) while the
+   column around it shifts right by --rail-pad, i.e. its centre by half.
+   Repeats .typing-chrome's opacity timing — this shorthand would replace it. */
+.rail-counter {
+  transform: translateX(calc(var(--rail-pad) / -2));
   transition:
-    left 0.5s var(--expo-out),
-    max-width 0.5s var(--expo-out);
-}
-/* inside the stage but pinned under the nav (the camera island): cancels
-   the stage's shift with the same timing, so it never drifts */
-.rail-pinned {
-  position: relative;
-  left: calc(-1 * var(--stage-shift));
-  transition:
-    left 0.5s var(--expo-out),
-    opacity 0.3s ease;
+    transform 0.5s var(--expo-out),
+    opacity 450ms var(--expo-out);
 }
 
 /* ── Typing surface ────────────────────────────────────────────────── */
