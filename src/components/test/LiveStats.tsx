@@ -1,6 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useMemo } from "react";
+
+import { SmoothNumber } from "@/components/glass";
 
 import type { TypingEngine } from "@/lib/engine/engine";
 import { useSettings } from "@/lib/store/settings";
@@ -13,9 +16,9 @@ export interface LiveStatsProps {
 
 /**
  * Clock + live wpm/accuracy — quiet, above the stream, no layout shift.
- * Plain tabular digits on purpose: these change on every keystroke, so a
- * rolling-digit animation is always mid-roll (unreadable) and its per-key
- * style recalcs were the biggest cost of a keystroke.
+ * Digits roll (NumberFlow), but wpm/accuracy are sampled once per clock
+ * second, not per keystroke: per-key rolls were always mid-roll and were the
+ * biggest cost of a keystroke (see commit b91bf62).
  */
 export function LiveStats({ engine }: LiveStatsProps) {
   const snapshot = useEngineSnapshot(engine);
@@ -26,6 +29,16 @@ export function LiveStats({ engine }: LiveStatsProps) {
 
   const seconds = snapshot?.clockSeconds ?? 0;
   const minutes = Math.floor(seconds / 60);
+  // re-sampled only when the clock ticks, so each roll finishes and typing
+  // never pays for an animation
+  const sampled = useMemo(
+    () => ({
+      wpm: Math.round(snapshot?.liveWpm ?? 0),
+      acc: Math.round(snapshot?.liveAccuracy ?? 100),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [seconds, snapshot?.status],
+  );
 
   return (
     <AnimatePresence>
@@ -44,19 +57,20 @@ export function LiveStats({ engine }: LiveStatsProps) {
                 {minutes}:{String(seconds % 60).padStart(2, "0")}
               </>
             ) : (
-              seconds
+              <SmoothNumber value={seconds} tabular />
             )}
           </span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground">
-            <span className="text-xl text-foreground tabular-nums">
-              {Math.round(snapshot.liveWpm)}
-            </span>
+            <SmoothNumber className="text-xl text-foreground" value={sampled.wpm} tabular />
             <span className="font-sans text-xs">wpm</span>
           </span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground">
-            <span className="text-xl text-foreground tabular-nums">
-              {Math.round(snapshot.liveAccuracy)}%
-            </span>
+            <SmoothNumber
+              className="text-xl text-foreground"
+              value={sampled.acc}
+              suffix="%"
+              tabular
+            />
             <span className="font-sans text-xs">acc</span>
           </span>
         </motion.div>
