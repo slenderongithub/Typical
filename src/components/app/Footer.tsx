@@ -44,7 +44,7 @@ const GLOSSARY: [string, string][] = [
 /** Quiet monkeytype-style footer: links left, version right. */
 export function Footer() {
   return (
-    <footer className="typing-chrome mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 pb-4 text-xs text-faint-foreground">
+    <footer className="typing-chrome site-footer mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-4 pr-4 text-xs text-faint-foreground">
       <nav aria-label="links" className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {LINKS.map((l) => (
           <a

@@ -591,6 +591,14 @@ html[data-typing] .typing-chrome {
 /* keeps an element centred on the viewport (e.g. under the nav) while the
    column around it shifts right by --rail-pad, i.e. its centre by half.
    Repeats .typing-chrome's opacity timing — this shorthand would replace it. */
+/* left padding lives here, not in a utility. The footer is centred in a 64rem box; it only needs to move when the fixed
+   rail actually reaches into that box (narrow screens) */
+.site-footer {
+  padding-left: max(
+    1rem,
+    calc(var(--rail-right, 0px) + 0.75rem - max(0px, (100vw - 64rem) / 2))
+  );
+}
 .rail-counter {
   transform: translateX(calc(var(--rail-pad) / -2));
   transition:

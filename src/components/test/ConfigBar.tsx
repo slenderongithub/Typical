@@ -297,8 +297,9 @@ function CustomValue({
             }}
             onSubmit={(e) => {
               e.preventDefault();
-              const v = Math.floor(Number(draft));
-              if (Number.isFinite(v) && v >= 5 && v <= 100000) {
+              // capped: every word renders at once, so a huge count froze the page
+              const v = Math.min(Math.floor(Number(draft)), unit === "words" ? 1000 : 3600);
+              if (Number.isFinite(v) && v >= 5) {
                 onSubmit(v);
                 setOpen(false);
               }
@@ -377,6 +378,7 @@ function CustomTextModal({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={6}
+              maxLength={10000}
               autoFocus
               className="w-full resize-none rounded-2xl border border-glass-border bg-glass p-4 font-mono text-sm leading-relaxed text-foreground outline-none transition-colors placeholder:text-faint-foreground focus:border-primary/60 focus-visible:outline-none"
               placeholder="once upon a midnight dreary…"

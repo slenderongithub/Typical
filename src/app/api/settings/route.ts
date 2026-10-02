@@ -30,8 +30,11 @@ export async function GET() {
 }
 
 const putSchema = z.object({
-  settings: z.record(z.string(), z.unknown()).optional(),
-  displayName: z.string().min(2).max(40).optional(),
+  settings: z
+    .record(z.string(), z.unknown())
+    .refine((s) => JSON.stringify(s).length <= 20000)
+    .optional(),
+  displayName: z.string().trim().min(2).max(40).optional(),
 });
 
 export async function PUT(req: Request) {

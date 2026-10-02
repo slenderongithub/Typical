@@ -95,11 +95,13 @@ export async function applyPersonalBest(
   return { isNewBest: previous !== undefined, previous };
 }
 
+/** Stored streak; `current` reads 0 once a whole day has been missed. */
 export async function getStreak(): Promise<StreakInfo> {
   if (onServer()) return { current: 0, best: 0, lastDay: "" };
-  return (
-    (await get<StreakInfo>(K_STREAK)) ?? { current: 0, best: 0, lastDay: "" }
-  );
+  const s = (await get<StreakInfo>(K_STREAK)) ?? { current: 0, best: 0, lastDay: "" };
+  const now = Date.now();
+  const alive = s.lastDay === dayKey(now) || s.lastDay === dayKey(now - 86_400_000);
+  return alive ? s : { ...s, current: 0 };
 }
 
 /** Idempotent per day: extends, keeps, or resets the practice streak. */

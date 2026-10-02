@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(200),
-  displayName: z.string().min(2).max(40),
+  displayName: z.string().trim().min(2).max(40),
 });
 
 export async function POST(req: Request) {

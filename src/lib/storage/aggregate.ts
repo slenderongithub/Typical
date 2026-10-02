@@ -73,7 +73,8 @@ export function summarize(results: SavedResult[]): {
   avgWpm: number;
   avgAccuracy: number;
   totalTimeMs: number;
-  cleanRate: number;
+  /** null when no run was camera-tracked — a rate of nothing isn't 0% */
+  cleanRate: number | null;
 } {
   if (results.length === 0) {
     return {
@@ -82,7 +83,7 @@ export function summarize(results: SavedResult[]): {
       avgWpm: 0,
       avgAccuracy: 0,
       totalTimeMs: 0,
-      cleanRate: 0,
+      cleanRate: null,
     };
   }
   const tracked = results.filter((r) => r.integrity !== "untracked");
@@ -95,6 +96,6 @@ export function summarize(results: SavedResult[]): {
     cleanRate:
       tracked.length > 0
         ? tracked.filter((r) => r.integrity === "clean").length / tracked.length
-        : 0,
+        : null,
   };
 }

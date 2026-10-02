@@ -113,6 +113,11 @@ export class TypingEngine {
     if (this.status === "idle") this.begin(timestampMs);
 
     const elapsed = this.elapsed(timestampMs);
+    // the 250ms clock can lag the deadline — a key after it doesn't count
+    if (this.config.mode === "time" && elapsed >= this.config.duration * 1000) {
+      this.onClock(timestampMs);
+      return;
+    }
     this.lastEventElapsed = elapsed;
 
     if (key === "Backspace" || key === "Backspace:word") {
@@ -233,9 +238,9 @@ export class TypingEngine {
     return Math.max(0, at - this.startTs - this.pausedTotal);
   }
 
-  private onClock(): void {
+  private onClock(at?: number): void {
     if (this.status !== "running") return;
-    const elapsed = this.elapsed();
+    const elapsed = this.elapsed(at);
 
     // emit one TickSample per completed second
     const fullSeconds = Math.floor(elapsed / 1000);

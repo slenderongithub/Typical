@@ -531,6 +531,13 @@ The app is deployment-ready and **builds with zero env vars** (guest mode) —
   - Film grain: `body::before` is a fixed SVG `feTurbulence` noise layer at z -1. It blends with its own `background-color: var(--background)` via `background-blend-mode: overlay`, because `mix-blend-mode` can't see the canvas colour (it blended against nothing). Overlay grain fades near black and white, so `--grain-opacity` is set per theme (0.3–1) to hit the same measured strength (pixel std ≈ 3.5–4 on a 2× screenshot).
   - Gaze rounds 14–16 (calibration, per-user classifier, record mode) are on this branch now. The user said ship them as-is, even before Phase C tuning on pooled CSVs. `/gaze-lab` calls `notFound()` in production builds, so it is a local-only tool (`npm run dev`) for recording friends' calibration CSVs.
 
+- **Round 19: footer, calibration simplification, pre-deploy sweep (2026-10-03, branch `theme-choices`):**
+  - `components/app/Footer.tsx` (server component, in layout): contact/github/twitter/linkedin with inline simple-icons SVGs (lucide v1 has no brand icons), version from package.json, and a "notes" glossary in a native `popover` (no client JS). Its left padding lives in `.site-footer` (globals.css) so it clears the fixed config rail on narrow screens; `--rail-right` is now written on `<html>` (cleared when the test page unmounts) instead of the test column.
+  - Calibration: each of the 4 steps waits on a "ready" button before recording. The "unclear" verdict is switched off — every finished run installs a calibration (`valid: true`), at the user's request until gaze detection is reworked (`ponytail:` comment marks the spot). The "done → onDone" timer moved to its own effect (the phase change used to cancel it, leaving the overlay stuck on "calibrated"). The status pill shows "eyes on screen" in the mid-score zone and "not calibrated" before calibration.
+  - Test page: text stage sits one line higher; Enter can't click focused buttons mid-test; any open `aria-modal` swallows the global key handler. Engine: a key after a time test's deadline ends the run instead of counting (`src/lib/engine/engine.check.ts`, run with `npx jiti`).
+  - Stats: page narrowed to `max-w-5xl` (spacing kept); per-key accuracy has numbers/punctuation toggles; streak `current` reads 0 once a day is missed (`getStreak`); "clean runs" shows "—" with no tracked runs. Settings: two-column on `lg`.
+  - Server: `config`/`settings` JSON capped at 20k chars, display names trimmed; custom text box capped at 10k chars; custom word count capped at 1000, seconds at 3600. Grain opacity halved. Placeholder leaderboard is 5 users at 70–90 wpm.
+
 ## Keeping this file current
 
 After any nontrivial change to this project (new module, changed contract,

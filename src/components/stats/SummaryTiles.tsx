@@ -49,7 +49,11 @@ export function SummaryTiles({ summary }: SummaryTilesProps) {
       </Tile>
       <Tile label="time typing">{humanizeMs(summary.totalTimeMs)}</Tile>
       <Tile label="clean runs">
-        <SmoothNumber value={Math.round(summary.cleanRate * 100)} suffix="%" />
+        {summary.cleanRate === null ? (
+          <span className="text-faint-foreground">—</span>
+        ) : (
+          <SmoothNumber value={Math.round(summary.cleanRate * 100)} suffix="%" />
+        )}
       </Tile>
     </div>
   );

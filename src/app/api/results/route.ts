@@ -22,7 +22,10 @@ const tickSchema = z.object({
 
 const resultSchema = z.object({
   mode: z.enum(["time", "words", "quote", "zen", "custom"]),
-  config: z.record(z.string(), z.unknown()),
+  // stored verbatim as JSON — cap it so one request can't park megabytes
+  config: z
+    .record(z.string(), z.unknown())
+    .refine((c) => JSON.stringify(c).length <= 20000),
   configKey: z.string().max(80),
   wpm: z.number(),
   rawWpm: z.number(),

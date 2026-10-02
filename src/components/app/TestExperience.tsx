@@ -369,12 +369,13 @@ export function TestExperience() {
         target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
-          target.isContentEditable ||
-          // modals (consent, calibration) own their keys
-          target.closest('[role="dialog"]'))
+          target.isContentEditable)
       ) {
         return;
       }
+      // an open modal (consent, calibration, custom text) owns the keyboard,
+      // even when focus has fallen back to the page behind it
+      if (document.querySelector('[aria-modal="true"]')) return;
 
       const quickRestart = useSettings.getState().quickRestart;
 
@@ -543,7 +544,7 @@ export function TestExperience() {
     }
   }, [gaze.consented, gaze.cameraOn, startCamera, stopCamera]);
 
-  // the overlay has already installed a calibration that passed its drill
+  // the overlay has already installed the calibration on the controller
   const onCalibrated = useCallback(() => {
     setCalibrating(false);
     useGazeStore.getState().setCalibrated(true);
@@ -590,18 +591,23 @@ export function TestExperience() {
   }, []);
 
   // written straight to the DOM (no re-render) — it changes every frame
-  // while the rail animates
-  const columnRef = useRef<HTMLDivElement>(null);
+  // while the rail animates. On the root so the footer can clear the rail too.
   const onRailRightEdge = useCallback((px: number) => {
-    columnRef.current?.style.setProperty("--rail-right", `${px}px`);
+    document.documentElement.style.setProperty("--rail-right", `${px}px`);
   }, []);
+  useEffect(
+    () => () => {
+      document.documentElement.style.removeProperty("--rail-right");
+    },
+    [],
+  );
 
   /* ── render ───────────────────────────────────────────────────────── */
 
   const pressTap = reduceMotion ? undefined : { scale: 0.96 };
 
   return (
-    <div ref={columnRef} className="rail-aware flex w-full flex-1 flex-col">
+    <div className="rail-aware flex w-full flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center">
         {/* the config rail is fixed to the viewport, so it lives outside the
           transformed phase wrapper below (a transform would re-anchor it) */}
